@@ -660,14 +660,14 @@ function broadcastMomentUpdate() {
 
 // ===== Server =====
 const server = http.createServer((req, res) => {
-  if (req.url === '/' || req.url === '/index.html') {
-    fs.readFile(INDEX_FILE, (err, data) => {
+  if (req.url === '/' || req.url === '/index.html' || req.url === '/chat' || req.url === '/basic-chatting.html' || req.url === '/app') {
+    fs.readFile(CHAT_FILE, (err, data) => {
       if (err) { res.writeHead(500); res.end('Error loading page'); return; }
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
       res.end(data);
     });
-  } else if (req.url === '/chat' || req.url === '/basic-chatting.html' || req.url === '/app') {
-    fs.readFile(CHAT_FILE, (err, data) => {
+  } else if (req.url === '/landing') {
+    fs.readFile(INDEX_FILE, (err, data) => {
       if (err) { res.writeHead(500); res.end('Error loading page'); return; }
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
       res.end(data);
