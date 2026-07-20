@@ -674,6 +674,30 @@ const server = http.createServer((req, res) => {
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
       res.end(data);
     });
+  } else if (req.url === '/manifest.json') {
+    fs.readFile(path.join(__dirname, 'manifest.json'), (err, data) => {
+      if (err) { res.writeHead(404); res.end('Not Found'); return; }
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(data);
+    });
+  } else if (req.url === '/sw.js') {
+    fs.readFile(path.join(__dirname, 'sw.js'), (err, data) => {
+      if (err) { res.writeHead(404); res.end('Not Found'); return; }
+      res.writeHead(200, { 'Content-Type': 'application/javascript; charset=utf-8' });
+      res.end(data);
+    });
+  } else if (req.url === '/icon-192.png') {
+    fs.readFile(path.join(__dirname, 'icon-192.png'), (err, data) => {
+      if (err) { res.writeHead(404); res.end('Not Found'); return; }
+      res.writeHead(200, { 'Content-Type': 'image/png' });
+      res.end(data);
+    });
+  } else if (req.url === '/icon-512.png') {
+    fs.readFile(path.join(__dirname, 'icon-512.png'), (err, data) => {
+      if (err) { res.writeHead(404); res.end('Not Found'); return; }
+      res.writeHead(200, { 'Content-Type': 'image/png' });
+      res.end(data);
+    });
   } else {
     res.writeHead(404);
     res.end('Not Found');
