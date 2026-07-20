@@ -283,7 +283,7 @@ body{font-family:var(--font);font-size:15px;line-height:1.5;color:var(--ink);bac
   <div class="auth-card" id="authCard">
     <div class="logo">💬</div>
     <h1>Basic Chatting</h1>
-    <p class="subtitle">头像 · 朋友圈 · 群聊 · 密码保护</p>
+    <p class="subtitle">头像 · 动态 · 群聊 · 密码保护</p>
     <div class="auth-columns">
       <div class="auth-col">
         <h2>登 录</h2>
@@ -322,7 +322,7 @@ body{font-family:var(--font);font-size:15px;line-height:1.5;color:var(--ink);bac
       <div class="tab active" id="tabFriends" onclick="switchTab('friends')">好友</div>
       <div class="tab" id="tabGroups" onclick="switchTab('groups')">群聊</div>
       <div class="tab" id="tabRequests" onclick="switchTab('requests')">请求<span class="tab-badge" id="requestBadge" style="display:none">0</span></div>
-      <div class="tab" id="tabMoments" onclick="switchTab('moments')">朋友圈</div>
+      <div class="tab" id="tabMoments" onclick="switchTab('moments')">动态</div>
     </div>
     <div class="contact-list" id="contactList"></div>
     <div class="sidebar-footer" id="sidebarFooter">
@@ -363,7 +363,7 @@ body{font-family:var(--font);font-size:15px;line-height:1.5;color:var(--ink);bac
   <div class="moments-panel hidden" id="momentsPanel">
     <div class="moments-header">
       <button class="back-btn" onclick="showSidebar()" style="display:block">←</button>
-      <h3>朋友圈</h3>
+      <h3>动态</h3>
       <button class="post-btn" onclick="showPostMoment()">发布</button>
     </div>
     <div class="moments-feed" id="momentsFeed"></div>
@@ -475,7 +475,7 @@ body{font-family:var(--font);font-size:15px;line-height:1.5;color:var(--ink);bac
   <div class="modal">
     <h3>注销账号</h3>
     <p style="color:var(--danger);font-size:14px;text-align:center;margin-bottom:12px;">⚠️ 此操作不可撤销！</p>
-    <p style="color:var(--muted);font-size:13px;text-align:center;margin-bottom:16px;">所有数据将被永久删除，包括消息、好友、朋友圈和群聊记录</p>
+    <p style="color:var(--muted);font-size:13px;text-align:center;margin-bottom:16px;">所有数据将被永久删除，包括消息、好友、动态和群聊记录</p>
     <label for="deletePassConfirm">输入密码确认</label>
     <input type="password" id="deletePassConfirm" placeholder="输入密码" maxlength="30">
     <div class="modal-error" id="deleteAccountError"></div>
@@ -1014,8 +1014,32 @@ function previewPostImage(input) {
   const file = input.files[0];
   const preview = document.getElementById('postImgPreview');
   if (!file) { preview.style.display = 'none'; return; }
+  if (file.size > 500 * 1024) {
+    showToast('图片过大（最大500KB），请压缩后再上传');
+    input.value = '';
+    return;
+  }
   const reader = new FileReader();
-  reader.onload = function(e) { preview.src = e.target.result; preview.style.display = 'block'; };
+  reader.onload = function(e) {
+    const img = new Image();
+    img.onload = function() {
+      const canvas = document.createElement('canvas');
+      let w = img.width, h = img.height;
+      const maxW = 800, maxH = 800;
+      if (w > maxW || h > maxH) {
+        const ratio = Math.min(maxW / w, maxH / h);
+        w = Math.round(w * ratio);
+        h = Math.round(h * ratio);
+      }
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+      preview.src = canvas.toDataURL('image/jpeg', 0.7);
+      preview.style.display = 'block';
+    };
+    img.src = e.target.result;
+  };
   reader.readAsDataURL(file);
 }
 function postMoment() {
@@ -1023,6 +1047,7 @@ function postMoment() {
   const imgPreview = document.getElementById('postImgPreview');
   const imgData = imgPreview.style.display !== 'none' ? imgPreview.src : null;
   if (!text && !imgData) { showToast('请输入内容或添加图片'); return; }
+  if (text.length > 500) { showToast('内容不能超过500字'); return; }
   send({ type: 'moment_post', text, image: imgData });
   closePostMoment();
   showToast('发布成功');
@@ -1039,11 +1064,15 @@ function commentMoment(momentId) {
 }
 function renderMoments() {
   const el = document.getElementById('momentsFeed');
+  if (!allMoments || allMoments.length === 0) {
+    el.innerHTML = '<div class="empty-chat" style="padding:40px"><div class="empty-icon">📷</div><p>暂无动态</p><p style="color:var(--muted);font-size:13px;margin-top:8px;">点击右上角"发布"按钮分享第一条动态吧</p></div>';
+    return;
+  }
   const visible = allMoments.filter(function(m) {
     return m.authorNameLower === myNameLower || isFriend(m.authorNameLower);
   }).reverse();
   if (visible.length === 0) {
-    el.innerHTML = '<div class="empty-chat" style="padding:40px"><div class="empty-icon">📷</div><p>朋友圈暂无动态</p></div>';
+    el.innerHTML = '<div class="empty-chat" style="padding:40px"><div class="empty-icon">📷</div><p>暂无动态</p><p style="color:var(--muted);font-size:13px;margin-top:8px;">发布第一条动态，或添加好友后就能看到更多内容</p></div>';
     return;
   }
   let html = '';
