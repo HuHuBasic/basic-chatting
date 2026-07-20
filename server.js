@@ -4,7 +4,9 @@ const fs = require('fs');
 const path = require('path');
 
 const PORT = process.env.PORT || 8080;
-const DATA_FILE = path.join(__dirname, 'server-data.json');
+// Try /data first (Suga volume), fall back to local
+const PERSIST_DIR = fs.existsSync('/data') ? '/data' : __dirname;
+const DATA_FILE = path.join(PERSIST_DIR, 'server-data.json');
 const INDEX_FILE = path.join(__dirname, 'index.html');
 const CHAT_FILE = path.join(__dirname, 'basic-chatting.html');
 

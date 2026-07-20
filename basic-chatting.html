@@ -36,6 +36,10 @@ body{font-family:var(--font);font-size:15px;line-height:1.5;color:var(--ink);bac
 .auth-col input:focus{border-color:var(--accent)}
 .auth-col button{padding:12px;width:100%;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:none;border-radius:var(--radius-sm);font-size:15px;font-weight:600;font-family:var(--font);cursor:pointer;transition:var(--transition);-webkit-tap-highlight-color:transparent;margin-top:10px;}
 .auth-col button:active{transform:scale(.97);opacity:.9}
+.remember-row{display:flex;align-items:center;gap:8px;margin-top:10px;text-align:left}
+.remember-row input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent);cursor:pointer;margin:0}
+.remember-row label{color:var(--muted);font-size:13px;cursor:pointer;margin:0!important;user-select:none}
+.remember-row label:hover{color:#cbd5e1}
 .auth-divider{display:flex;align-items:center;justify-content:center;flex:0 0 40px;position:relative;}
 .auth-divider::before{content:'';position:absolute;top:30px;bottom:30px;width:1px;background:#334155;left:50%;transform:translateX(-50%);}
 .auth-divider span{background:var(--bg2);color:var(--muted);font-size:12px;font-weight:600;padding:4px 8px;z-index:1;}
@@ -291,6 +295,10 @@ body{font-family:var(--font);font-size:15px;line-height:1.5;color:var(--ink);bac
         <input type="text" id="loginName" placeholder="输入用户名..." maxlength="20" autocomplete="off">
         <label for="loginPass">密码</label>
         <input type="password" id="loginPass" placeholder="输入密码..." maxlength="30">
+        <div class="remember-row">
+          <input type="checkbox" id="rememberMe">
+          <label for="rememberMe">记住我</label>
+        </div>
         <div class="error-msg" id="loginError"></div>
         <button onclick="doLogin()">登 录</button>
       </div>
@@ -515,6 +523,20 @@ let groupUnreadRead = {}; // { groupId: timestamp }
 const WS_URL = (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host;
 
 // ===== Init =====
+function autoLogin() {
+  const saved = localStorage.getItem('bc_remember');
+  if (!saved) return;
+  try {
+    const creds = JSON.parse(saved);
+    if (creds.name && creds.pass) {
+      document.getElementById('loginName').value = creds.name;
+      document.getElementById('loginPass').value = creds.pass;
+      document.getElementById('rememberMe').checked = true;
+      doLogin();
+    }
+  } catch(e) {}
+}
+
 function init() {
   bindEnter('loginName', doLogin);
   bindEnter('loginPass', doLogin);
@@ -619,9 +641,18 @@ function doLogin() {
 
         tempWs.close();
         connectWebSocket();
+        // 注册成功自动记住
+        localStorage.setItem('bc_remember', JSON.stringify({ name: regName, pass: regPass }));
+        document.getElementById('rememberMe').checked = true;
         renderContacts();
         updateOnlineCount();
         updateRequestBadge();
+        // 记住我
+        if (document.getElementById('rememberMe').checked) {
+          localStorage.setItem('bc_remember', JSON.stringify({ name, pass }));
+        } else {
+          localStorage.removeItem('bc_remember');
+        }
       } else {
         errEl.textContent = data.error;
         tempWs.close();
@@ -1419,9 +1450,12 @@ function sendMessage() {
 function doLogout() {
   if (ws) { send({ type: 'leave' }); ws.close(); }
   clearInterval(heartbeatInterval);
+  localStorage.removeItem('bc_remember');
   document.getElementById('app').classList.add('hidden');
   document.getElementById('authScreen').style.display = 'flex';
-  document.getElementById('loginName').value = myName;
+  document.getElementById('loginName').value = '';
+  document.getElementById('loginPass').value = '';
+  document.getElementById('rememberMe').checked = false;
   resetState();
 }
 
