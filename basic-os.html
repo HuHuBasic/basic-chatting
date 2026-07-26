@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>HU basic — x86 操作系统内核 · 64/32/64+32 位</title>
+<title>HU basic OS — x86 操作系统内核 · 64/32/64+32 位</title>
 <style>
 /* ===== Fonts ===== */
 @font-face {
@@ -47,584 +47,1849 @@
   --red:     #f85149;
   --purple:  #a371f7;
   --cyan:    #39d353;
-  --max-w:   1080px;
+  --win-bg:  #1c2128;
+  --win-hdr: #252b33;
+  --taskbar: #161b22;
+  --desktop: #0a1628;
 }
 
 /* ===== Reset ===== */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; font-size: 16px; }
+html, body { width: 100%; height: 100%; overflow: hidden; font-size: 16px; }
 body {
   font-family: 'Bricolage', 'Noto Sans CJK SC', -apple-system, sans-serif;
-  background: var(--bg);
+  background: var(--desktop);
   color: var(--ink);
-  line-height: 1.7;
-  overflow-x: hidden;
+  line-height: 1.6;
+  user-select: none;
 }
 
-/* ===== Layout ===== */
-.container { max-width: var(--max-w); margin: 0 auto; padding: 0 2rem; }
-.section { padding: 5rem 0; }
-
-/* ===== Nav ===== */
-nav {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-  background: rgba(13,17,23,0.88); backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--rule);
-}
-.nav-inner {
-  max-width: var(--max-w); margin: 0 auto; padding: 0 2rem;
-  display: flex; align-items: center; justify-content: space-between; height: 56px;
-}
-.nav-brand {
-  font-family: 'GeistMono', monospace; font-weight: 700; font-size: 1.1rem;
-  color: var(--accent); text-decoration: none;
-}
-.nav-brand span { color: var(--accent2); }
-.nav-links { display: flex; gap: 1.8rem; list-style: none; }
-.nav-links a {
-  color: var(--muted); text-decoration: none; font-size: 0.9rem;
-  transition: color 0.2s;
-}
-.nav-links a:hover { color: var(--ink); }
-
-/* ===== Hero ===== */
-.hero {
-  padding: 10rem 0 6rem;
-  text-align: center;
-  position: relative;
+/* ===== Desktop Wallpaper ===== */
+.desktop {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 48px;
+  background: linear-gradient(180deg, #0a1628 0%, #0d1a2d 30%, #0f1f35 60%, #0a1628 100%);
   overflow: hidden;
+  z-index: 0;
 }
-.hero::before {
-  content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
-  width: 600px; height: 600px;
-  background: radial-gradient(circle, rgba(88,166,255,0.08) 0%, transparent 70%);
+.desktop::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(88,166,255,0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 30%, rgba(63,185,80,0.04) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 80%, rgba(163,113,247,0.04) 0%, transparent 50%);
   pointer-events: none;
 }
-.hero-badge {
-  display: inline-block; padding: 0.3rem 0.9rem;
-  background: rgba(63,185,80,0.12); border: 1px solid rgba(63,185,80,0.3);
-  border-radius: 999px; font-size: 0.8rem; color: var(--accent2);
-  margin-bottom: 1.5rem; font-family: 'GeistMono', monospace;
+.desktop-grid {
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  background-image:
+    linear-gradient(rgba(48,54,61,0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(48,54,61,0.08) 1px, transparent 1px);
+  background-size: 80px 80px;
+  pointer-events: none;
 }
-.hero h1 {
-  font-size: 3.2rem; font-weight: 700; letter-spacing: -0.02em;
-  line-height: 1.15; margin-bottom: 1rem;
+
+/* ===== Desktop Icons ===== */
+.desktop-icons {
+  position: absolute; top: 16px; left: 16px;
+  display: flex; flex-direction: column; gap: 6px;
+  z-index: 1;
 }
-.hero h1 .accent { color: var(--accent); }
-.hero h1 .green { color: var(--accent2); }
-.hero-sub {
-  font-size: 1.15rem; color: var(--muted); max-width: 560px;
-  margin: 0 auto 2.5rem; line-height: 1.6;
+.desk-icon {
+  display: flex; flex-direction: column; align-items: center;
+  width: 80px; padding: 10px 6px; border-radius: 8px;
+  cursor: pointer; transition: background 0.15s;
+  text-align: center; gap: 6px;
 }
-.hero-actions { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
-.btn {
-  display: inline-flex; align-items: center; gap: 0.5rem;
-  padding: 0.7rem 1.5rem; border-radius: 8px; font-size: 0.95rem;
-  font-weight: 600; text-decoration: none; cursor: pointer;
-  transition: all 0.2s; border: 1px solid transparent;
+.desk-icon:hover { background: rgba(255,255,255,0.08); }
+.desk-icon:active { background: rgba(255,255,255,0.14); }
+.desk-icon .icon-img {
+  width: 40px; height: 40px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.5rem;
+}
+.desk-icon .icon-label {
+  font-size: 0.7rem; color: var(--ink);
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+  word-break: break-all; line-height: 1.2;
+}
+.icon-browser { background: linear-gradient(135deg, #4285f4, #34a853, #fbbc05, #ea4335); }
+.icon-settings { background: linear-gradient(135deg, #6c5ce7, #a29bfe); }
+.icon-store { background: linear-gradient(135deg, #00cec9, #0984e3); }
+.icon-files { background: linear-gradient(135deg, #fdcb6e, #e17055); }
+.icon-terminal { background: linear-gradient(135deg, #2d3436, #636e72); }
+
+/* ===== Taskbar ===== */
+.taskbar {
+  position: fixed; bottom: 0; left: 0; right: 0; height: 48px;
+  background: var(--taskbar); border-top: 1px solid var(--rule);
+  display: flex; align-items: center; padding: 0 8px;
+  z-index: 1000; gap: 4px;
+  backdrop-filter: blur(20px);
+}
+.taskbar-center { flex: 1; display: flex; align-items: center; gap: 2px; }
+.taskbar-right {
+  display: flex; align-items: center; gap: 4px;
+  padding-right: 8px;
+}
+
+/* Start Button */
+.start-btn {
+  width: 40px; height: 36px; border-radius: 6px;
+  background: transparent; border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.2rem; color: var(--ink); transition: background 0.15s;
+}
+.start-btn:hover { background: var(--bg3); }
+.start-btn.active { background: var(--bg3); }
+
+/* Taskbar App Buttons */
+.task-btn {
+  height: 36px; padding: 0 12px; border-radius: 6px;
+  background: transparent; border: none; cursor: pointer;
+  font-size: 0.78rem; color: var(--muted); display: flex;
+  align-items: center; gap: 6px; transition: all 0.15s;
+  font-family: 'Bricolage', 'Noto Sans CJK SC', sans-serif;
+  white-space: nowrap;
+}
+.task-btn:hover { background: var(--bg3); color: var(--ink); }
+.task-btn.active { background: var(--bg3); color: var(--ink); border-bottom: 2px solid var(--accent); }
+
+/* Taskbar Tray */
+.tray-item {
+  height: 28px; padding: 0 8px; border-radius: 4px;
+  display: flex; align-items: center; gap: 4px;
+  font-size: 0.7rem; color: var(--muted); cursor: pointer;
+  font-family: 'GeistMono', monospace; transition: background 0.15s;
+}
+.tray-item:hover { background: var(--bg3); }
+.tray-version {
+  background: rgba(63,185,80,0.12); color: var(--accent2);
+  border: 1px solid rgba(63,185,80,0.25);
+  font-weight: 700; border-radius: 4px; padding: 2px 8px;
+  font-size: 0.68rem;
+}
+.tray-update {
+  color: var(--warn); cursor: pointer; font-size: 0.68rem;
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Tray popup */
+.tray-popup {
+  position: absolute; bottom: 54px; right: 8px;
+  width: 320px; background: var(--win-bg); border: 1px solid var(--rule);
+  border-radius: 10px; box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+  z-index: 1001; display: none; overflow: hidden;
+}
+.tray-popup.show { display: block; }
+.tray-popup-header {
+  padding: 14px 16px; border-bottom: 1px solid var(--rule);
+  font-weight: 700; font-size: 0.9rem;
+}
+.tray-popup-body { padding: 12px 16px; font-size: 0.82rem; }
+.tray-popup-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 6px 0; border-bottom: 1px solid rgba(48,54,61,0.5);
+}
+.tray-popup-row:last-child { border-bottom: none; }
+.tray-popup-label { color: var(--muted); }
+.tray-popup-value { font-family: 'GeistMono', monospace; font-size: 0.78rem; }
+
+/* ===== Start Menu ===== */
+.start-menu {
+  position: fixed; bottom: 56px; left: 8px;
+  width: 360px; max-height: 500px; background: var(--win-bg);
+  border: 1px solid var(--rule); border-radius: 12px;
+  box-shadow: 0 12px 48px rgba(0,0,0,0.6);
+  z-index: 1001; display: none; overflow: hidden;
+  backdrop-filter: blur(24px);
+}
+.start-menu.show { display: block; }
+.start-menu-search {
+  padding: 12px; border-bottom: 1px solid var(--rule);
+}
+.start-menu-search input {
+  width: 100%; padding: 8px 12px; background: var(--bg3);
+  border: 1px solid var(--rule); border-radius: 20px;
+  color: var(--ink); font-size: 0.82rem; outline: none;
   font-family: 'Bricolage', 'Noto Sans CJK SC', sans-serif;
 }
-.btn-primary {
-  background: var(--accent2); color: #0d1117; border-color: var(--accent2);
+.start-menu-search input::placeholder { color: var(--muted); }
+.start-menu-apps {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 4px; padding: 12px;
 }
-.btn-primary:hover { background: #2ea043; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(63,185,80,0.3); }
-.btn-outline {
-  background: transparent; color: var(--ink); border-color: var(--rule);
+.start-app {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 10px 8px; border-radius: 8px; cursor: pointer;
+  transition: background 0.15s; gap: 6px;
 }
-.btn-outline:hover { border-color: var(--muted); background: var(--bg2); }
-.btn-accent {
-  background: var(--accent); color: #0d1117; border-color: var(--accent);
+.start-app:hover { background: var(--bg3); }
+.start-app-icon { font-size: 1.4rem; }
+.start-app-name { font-size: 0.68rem; color: var(--ink); text-align: center; }
+.start-menu-footer {
+  padding: 10px 16px; border-top: 1px solid var(--rule);
+  display: flex; justify-content: space-between; align-items: center;
 }
-.btn-accent:hover { background: #4090e0; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(88,166,255,0.3); }
+.start-menu-user {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 0.78rem;
+}
+.start-menu-avatar {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--accent); display: flex; align-items: center;
+  justify-content: center; font-size: 0.8rem; color: #fff;
+}
+.start-menu-power {
+  font-size: 1rem; cursor: pointer; color: var(--muted);
+  padding: 4px 8px; border-radius: 4px; transition: all 0.15s;
+}
+.start-menu-power:hover { background: var(--red); color: #fff; }
+
+/* ===== Windows ===== */
+.window {
+  position: absolute; min-width: 360px; min-height: 240px;
+  background: var(--win-bg); border: 1px solid var(--rule);
+  border-radius: 10px; box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+  z-index: 10; display: none; flex-direction: column;
+  overflow: hidden; resize: both;
+}
+.window.open { display: flex; }
+.window.maximized {
+  top: 0 !important; left: 0 !important;
+  width: 100% !important; height: calc(100% - 48px) !important;
+  border-radius: 0 !important; resize: none;
+}
+.window.focused { z-index: 100; border-color: var(--accent); }
+.win-titlebar {
+  height: 38px; background: var(--win-hdr); display: flex;
+  align-items: center; padding: 0 8px; cursor: move;
+  border-bottom: 1px solid var(--rule); flex-shrink: 0;
+}
+.win-titlebar .win-icon { font-size: 0.9rem; margin-right: 8px; }
+.win-titlebar .win-title {
+  flex: 1; font-size: 0.78rem; color: var(--muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.win-ctrl {
+  display: flex; gap: 6px; margin-left: auto;
+}
+.win-ctrl button {
+  width: 28px; height: 28px; border-radius: 6px; border: none;
+  cursor: pointer; font-size: 0.8rem; display: flex;
+  align-items: center; justify-content: center; transition: background 0.15s;
+  background: transparent; color: var(--muted);
+}
+.win-ctrl button:hover { background: var(--bg3); }
+.win-ctrl .win-close:hover { background: var(--red); color: #fff; }
+.win-body {
+  flex: 1; overflow: auto; display: flex; flex-direction: column;
+}
+
+/* ===== Browser Window ===== */
+.browser-toolbar {
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 10px; background: var(--win-hdr);
+  border-bottom: 1px solid var(--rule);
+}
+.browser-nav-btns { display: flex; gap: 2px; }
+.browser-nav-btns button {
+  width: 30px; height: 30px; border-radius: 50%; border: none;
+  background: transparent; color: var(--muted); cursor: pointer;
+  font-size: 0.9rem; transition: all 0.15s;
+}
+.browser-nav-btns button:hover { background: var(--bg3); color: var(--ink); }
+.browser-url-bar {
+  flex: 1; display: flex; align-items: center;
+  background: var(--bg3); border-radius: 20px; padding: 0 12px;
+  height: 32px; border: 1px solid transparent;
+  transition: border-color 0.2s;
+}
+.browser-url-bar:focus-within { border-color: var(--accent); background: var(--bg); }
+.browser-url-bar .url-icon {
+  margin-right: 8px; color: var(--accent2); font-size: 0.75rem;
+}
+.browser-url-bar input {
+  flex: 1; background: none; border: none; color: var(--ink);
+  font-size: 0.78rem; outline: none; font-family: 'GeistMono', monospace;
+}
+.browser-tabs {
+  display: flex; background: var(--win-hdr); padding: 0 8px;
+  gap: 2px; align-items: flex-end; overflow-x: auto;
+}
+.browser-tab {
+  padding: 6px 14px; border-radius: 8px 8px 0 0;
+  font-size: 0.72rem; color: var(--muted); cursor: pointer;
+  white-space: nowrap; border: 1px solid transparent;
+  border-bottom: none; transition: all 0.15s; display: flex;
+  align-items: center; gap: 6px; min-width: 0;
+}
+.browser-tab:hover { background: var(--bg3); }
+.browser-tab.active {
+  background: var(--win-bg); color: var(--ink);
+  border-color: var(--rule);
+}
+.browser-tab .tab-close {
+  font-size: 0.65rem; opacity: 0; transition: opacity 0.15s;
+  margin-left: 4px; cursor: pointer;
+}
+.browser-tab:hover .tab-close { opacity: 0.6; }
+.browser-tab .tab-close:hover { opacity: 1; color: var(--red); }
+.browser-content {
+  flex: 1; overflow: auto; padding: 0; background: #fff;
+}
+
+/* ===== Settings Window ===== */
+.settings-sidebar {
+  width: 180px; background: var(--win-hdr); padding: 12px 0;
+  border-right: 1px solid var(--rule); flex-shrink: 0;
+}
+.settings-nav-item {
+  padding: 8px 16px; cursor: pointer; font-size: 0.78rem;
+  color: var(--muted); transition: all 0.15s; display: flex;
+  align-items: center; gap: 8px;
+}
+.settings-nav-item:hover { background: var(--bg3); color: var(--ink); }
+.settings-nav-item.active {
+  background: rgba(88,166,255,0.1); color: var(--accent);
+  border-right: 2px solid var(--accent);
+}
+.settings-content {
+  flex: 1; padding: 20px; overflow: auto;
+}
+.settings-section { display: none; }
+.settings-section.active { display: block; }
+.settings-section h3 {
+  font-size: 1.1rem; margin-bottom: 16px; font-weight: 700;
+}
+.settings-group {
+  background: var(--bg3); border-radius: 8px; padding: 16px;
+  margin-bottom: 16px;
+}
+.settings-group h4 {
+  font-size: 0.85rem; margin-bottom: 12px; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.05em;
+}
+.settings-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 0; border-bottom: 1px solid var(--rule);
+}
+.settings-row:last-child { border-bottom: none; }
+.settings-row label { font-size: 0.82rem; }
+.settings-row .value { color: var(--muted); font-size: 0.78rem; font-family: 'GeistMono', monospace; }
+.settings-toggle {
+  width: 40px; height: 22px; border-radius: 11px;
+  background: var(--rule); cursor: pointer; position: relative;
+  transition: background 0.2s;
+}
+.settings-toggle.on { background: var(--accent2); }
+.settings-toggle::after {
+  content: ''; position: absolute; top: 2px; left: 2px;
+  width: 18px; height: 18px; border-radius: 50%; background: #fff;
+  transition: transform 0.2s;
+}
+.settings-toggle.on::after { transform: translateX(18px); }
+.settings-select {
+  padding: 4px 8px; background: var(--bg); border: 1px solid var(--rule);
+  border-radius: 4px; color: var(--ink); font-size: 0.78rem;
+  font-family: 'Bricolage', 'Noto Sans CJK SC', sans-serif;
+}
+.settings-btn {
+  padding: 6px 16px; background: var(--accent); color: #fff;
+  border: none; border-radius: 6px; cursor: pointer; font-size: 0.82rem;
+  font-family: 'Bricolage', 'Noto Sans CJK SC', sans-serif;
+  transition: all 0.15s;
+}
+.settings-btn:hover { background: #4090e0; }
+.settings-btn.danger { background: var(--red); }
+.settings-btn.danger:hover { background: #d63a31; }
+
+/* Version badge in settings */
+.version-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(63,185,80,0.12); border: 1px solid rgba(63,185,80,0.3);
+  border-radius: 20px; padding: 4px 14px; font-size: 0.82rem;
+  color: var(--accent2); font-weight: 700;
+}
+
+/* ===== Upgrade Dialog ===== */
+.upgrade-header {
+  padding: 20px; text-align: center; border-bottom: 1px solid var(--rule);
+}
+.upgrade-header .upgrade-icon { font-size: 2.5rem; margin-bottom: 8px; }
+.upgrade-header h3 { font-size: 1.1rem; margin-bottom: 4px; }
+.upgrade-header p { color: var(--muted); font-size: 0.82rem; }
+.upgrade-body { padding: 16px 20px; flex: 1; overflow: auto; }
+.upgrade-current {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px; background: var(--bg3); border-radius: 8px;
+  margin-bottom: 16px;
+}
+.upgrade-current .ver-label { font-size: 0.78rem; color: var(--muted); }
+.upgrade-current .ver-num { font-size: 1.1rem; font-weight: 700; font-family: 'GeistMono', monospace; }
+.upgrade-changelog { margin-bottom: 16px; }
+.upgrade-changelog h4 { font-size: 0.85rem; margin-bottom: 8px; }
+.upgrade-item {
+  padding: 10px 14px; background: var(--bg3); border-radius: 6px;
+  margin-bottom: 6px; font-size: 0.8rem;
+}
+.upgrade-item .ver-tag {
+  display: inline-block; padding: 2px 8px; border-radius: 4px;
+  font-size: 0.68rem; font-weight: 700; margin-right: 8px;
+  font-family: 'GeistMono', monospace;
+}
+.upgrade-item .ver-tag.new { background: var(--accent2); color: #0d1117; }
+.upgrade-item .ver-tag.old { background: var(--bg3); color: var(--muted); }
+.upgrade-progress {
+  height: 6px; background: var(--bg3); border-radius: 3px;
+  margin: 12px 0; overflow: hidden; display: none;
+}
+.upgrade-progress .bar {
+  height: 100%; background: linear-gradient(90deg, var(--accent2), var(--accent));
+  border-radius: 3px; width: 0%; transition: width 0.5s;
+}
+.upgrade-actions {
+  padding: 16px 20px; border-top: 1px solid var(--rule);
+  display: flex; gap: 8px; justify-content: flex-end;
+}
+.upgrade-btn {
+  padding: 8px 20px; border-radius: 6px; border: none;
+  cursor: pointer; font-size: 0.82rem; font-weight: 600;
+  font-family: 'Bricolage', 'Noto Sans CJK SC', sans-serif;
+  transition: all 0.15s;
+}
+.upgrade-btn.primary { background: var(--accent2); color: #0d1117; }
+.upgrade-btn.primary:hover { background: #2ea043; }
+.upgrade-btn.secondary { background: var(--bg3); color: var(--ink); }
+.upgrade-btn.secondary:hover { background: var(--rule); }
+
+/* ===== App Store ===== */
+.store-header {
+  padding: 20px; border-bottom: 1px solid var(--rule);
+  background: linear-gradient(135deg, rgba(0,206,201,0.08), rgba(9,132,227,0.08));
+}
+.store-header h3 { font-size: 1.2rem; margin-bottom: 4px; }
+.store-header p { color: var(--muted); font-size: 0.78rem; }
+.store-search {
+  padding: 12px 20px; border-bottom: 1px solid var(--rule);
+}
+.store-search input {
+  width: 100%; padding: 8px 14px; background: var(--bg3);
+  border: 1px solid var(--rule); border-radius: 20px;
+  color: var(--ink); font-size: 0.82rem; outline: none;
+  font-family: 'Bricolage', 'Noto Sans CJK SC', sans-serif;
+}
+.store-tabs {
+  display: flex; padding: 0 20px; border-bottom: 1px solid var(--rule);
+  gap: 0;
+}
+.store-tab {
+  padding: 10px 16px; cursor: pointer; font-size: 0.78rem;
+  color: var(--muted); border-bottom: 2px solid transparent;
+  transition: all 0.15s; background: none; border-left: none;
+  border-right: none; border-top: none; font-family: 'Bricolage', 'Noto Sans CJK SC', sans-serif;
+}
+.store-tab:hover { color: var(--ink); }
+.store-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.store-content { flex: 1; overflow: auto; padding: 16px 20px; }
+.store-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+.store-app-card {
+  background: var(--bg3); border-radius: 10px; padding: 16px;
+  cursor: pointer; transition: all 0.2s; border: 1px solid transparent;
+}
+.store-app-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+.store-app-card .app-icon {
+  width: 48px; height: 48px; border-radius: 10px; display: flex;
+  align-items: center; justify-content: center; font-size: 1.5rem;
+  margin-bottom: 10px;
+}
+.store-app-card .app-name { font-size: 0.85rem; font-weight: 700; margin-bottom: 4px; }
+.store-app-card .app-desc { font-size: 0.72rem; color: var(--muted); line-height: 1.4; }
+.store-app-card .app-meta {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 10px; font-size: 0.68rem;
+}
+.store-app-card .app-rating { color: var(--warn); }
+.store-app-card .app-price { color: var(--accent2); font-weight: 700; }
+.store-app-card .app-installed {
+  color: var(--muted); font-size: 0.65rem;
+  background: var(--bg2); padding: 2px 8px; border-radius: 10px;
+}
+
+/* App detail */
+.store-detail { display: none; flex-direction: column; height: 100%; }
+.store-detail.show { display: flex; }
+.store-detail-back {
+  padding: 8px 16px; cursor: pointer; color: var(--accent);
+  font-size: 0.82rem; background: none; border: none;
+  text-align: left; font-family: 'Bricolage', 'Noto Sans CJK SC', sans-serif;
+}
+.store-detail-back:hover { text-decoration: underline; }
+.store-detail-hero {
+  padding: 20px; display: flex; gap: 16px; border-bottom: 1px solid var(--rule);
+}
+.store-detail-hero .app-icon-lg {
+  width: 72px; height: 72px; border-radius: 14px; display: flex;
+  align-items: center; justify-content: center; font-size: 2rem;
+  flex-shrink: 0;
+}
+.store-detail-info { flex: 1; }
+.store-detail-info h3 { font-size: 1.1rem; margin-bottom: 4px; }
+.store-detail-info .dev { color: var(--muted); font-size: 0.75rem; margin-bottom: 8px; }
+.store-detail-info .desc { font-size: 0.8rem; color: var(--muted); line-height: 1.5; }
+.store-detail-actions { padding: 16px 20px; display: flex; gap: 8px; }
+.store-install-btn {
+  padding: 8px 24px; background: var(--accent2); color: #0d1117;
+  border: none; border-radius: 6px; cursor: pointer; font-size: 0.85rem;
+  font-weight: 600; font-family: 'Bricolage', 'Noto Sans CJK SC', sans-serif;
+}
+.store-install-btn:hover { background: #2ea043; }
+.store-install-btn.installed { background: var(--bg3); color: var(--muted); cursor: default; }
+
+/* Submit form */
+.submit-form { display: none; padding: 20px; overflow: auto; }
+.submit-form.show { display: block; }
+.submit-form h3 { font-size: 1.1rem; margin-bottom: 16px; }
+.form-group { margin-bottom: 14px; }
+.form-group label {
+  display: block; font-size: 0.78rem; color: var(--muted);
+  margin-bottom: 4px;
+}
+.form-group input, .form-group textarea, .form-group select {
+  width: 100%; padding: 8px 12px; background: var(--bg3);
+  border: 1px solid var(--rule); border-radius: 6px;
+  color: var(--ink); font-size: 0.82rem; outline: none;
+  font-family: 'Bricolage', 'Noto Sans CJK SC', sans-serif;
+  transition: border-color 0.2s;
+}
+.form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+  border-color: var(--accent);
+}
+.form-group textarea { min-height: 80px; resize: vertical; }
+.form-group .hint { font-size: 0.68rem; color: var(--muted); margin-top: 4px; }
+.form-actions { display: flex; gap: 8px; margin-top: 16px; }
+.form-submit-btn {
+  padding: 8px 24px; background: var(--accent); color: #fff;
+  border: none; border-radius: 6px; cursor: pointer; font-size: 0.85rem;
+  font-weight: 600; font-family: 'Bricolage', 'Noto Sans CJK SC', sans-serif;
+}
+.form-submit-btn:hover { background: #4090e0; }
+.form-cancel-btn {
+  padding: 8px 24px; background: var(--bg3); color: var(--ink);
+  border: 1px solid var(--rule); border-radius: 6px; cursor: pointer;
+  font-size: 0.85rem; font-family: 'Bricolage', 'Noto Sans CJK SC', sans-serif;
+}
+
+/* Submit success */
+.submit-success {
+  display: none; padding: 40px 20px; text-align: center;
+}
+.submit-success.show { display: block; }
+.submit-success .success-icon { font-size: 3rem; margin-bottom: 12px; }
+.submit-success h3 { font-size: 1.1rem; margin-bottom: 8px; }
+.submit-success p { color: var(--muted); font-size: 0.82rem; }
 
 /* ===== Terminal Window ===== */
-.terminal-window {
-  max-width: 720px; margin: 3rem auto 0; border-radius: 10px;
-  overflow: hidden; border: 1px solid var(--rule);
-  box-shadow: 0 12px 48px rgba(0,0,0,0.5);
-}
-.terminal-bar {
-  background: var(--bg3); padding: 0.6rem 1rem; display: flex;
-  align-items: center; gap: 0.5rem;
-}
-.terminal-dot { width: 10px; height: 10px; border-radius: 50%; }
-.terminal-dot.r { background: var(--red); }
-.terminal-dot.y { background: var(--warn); }
-.terminal-dot.g { background: var(--accent2); }
-.terminal-title {
-  flex: 1; text-align: center; font-size: 0.78rem;
-  color: var(--muted); font-family: 'GeistMono', monospace;
-}
 .terminal-body {
-  background: #0a0e13; padding: 1.2rem 1.4rem;
-  font-family: 'GeistMono', monospace; font-size: 0.82rem;
-  line-height: 1.75; color: var(--ink);
-  overflow-x: auto;
+  flex: 1; background: #0a0e13; padding: 16px;
+  font-family: 'GeistMono', monospace; font-size: 0.78rem;
+  line-height: 1.75; color: var(--ink); overflow: auto;
 }
 .terminal-body .prompt { color: var(--accent2); }
 .terminal-body .cmd { color: var(--ink); }
 .terminal-body .output { color: var(--muted); }
 .terminal-body .highlight { color: var(--accent); }
-.terminal-body .warn { color: var(--warn); }
 
-/* ===== Features ===== */
-.features-grid {
-  display: grid; grid-template-columns: repeat(3, 1fr);
-  gap: 1.5rem; margin-top: 2.5rem;
+/* ===== Notification Toast ===== */
+.toast-container {
+  position: fixed; top: 16px; right: 16px; z-index: 2000;
+  display: flex; flex-direction: column; gap: 8px;
 }
-.feature-card {
-  background: var(--bg2); border: 1px solid var(--rule);
-  border-radius: 10px; padding: 1.8rem;
-  transition: border-color 0.2s, transform 0.2s;
+.toast {
+  background: var(--win-bg); border: 1px solid var(--rule);
+  border-radius: 8px; padding: 12px 16px; font-size: 0.8rem;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4); animation: slideIn 0.3s ease-out;
+  display: flex; align-items: center; gap: 8px; min-width: 260px;
 }
-.feature-card:hover { border-color: var(--accent); transform: translateY(-2px); }
-.feature-icon {
-  font-size: 1.6rem; margin-bottom: 1rem; display: block;
+.toast.success { border-left: 3px solid var(--accent2); }
+.toast.info { border-left: 3px solid var(--accent); }
+.toast.warning { border-left: 3px solid var(--warn); }
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
 }
-.feature-card h3 { font-size: 1.05rem; margin-bottom: 0.5rem; font-weight: 700; }
-.feature-card p { font-size: 0.88rem; color: var(--muted); line-height: 1.6; }
 
-/* ===== Section Headings ===== */
-.section-head { text-align: center; margin-bottom: 3rem; }
-.section-head h2 {
-  font-size: 2rem; font-weight: 700; letter-spacing: -0.01em;
-  margin-bottom: 0.6rem;
+/* ===== Context Menu ===== */
+.context-menu {
+  position: fixed; background: var(--win-bg); border: 1px solid var(--rule);
+  border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  z-index: 1500; display: none; min-width: 160px; padding: 4px 0;
 }
-.section-head p { color: var(--muted); font-size: 1.05rem; max-width: 560px; margin: 0 auto; }
+.context-menu.show { display: block; }
+.context-menu-item {
+  padding: 6px 16px; cursor: pointer; font-size: 0.78rem;
+  transition: background 0.15s; display: flex; align-items: center; gap: 8px;
+}
+.context-menu-item:hover { background: var(--bg3); }
+.context-menu-sep { height: 1px; background: var(--rule); margin: 4px 0; }
 
-/* ===== Desktop Preview ===== */
-.desktop-preview {
-  background: var(--bg2); border: 1px solid var(--rule);
-  border-radius: 12px; overflow: hidden; max-width: 820px; margin: 0 auto;
+/* ===== Boot Screen ===== */
+.boot-screen {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: #000; z-index: 9999; display: flex;
+  align-items: center; justify-content: center; flex-direction: column;
+  transition: opacity 0.5s;
 }
-.desktop-preview .topbar {
-  background: var(--bg3); padding: 0.4rem 1rem; font-size: 0.78rem;
-  color: var(--muted); font-family: 'GeistMono', monospace;
-  display: flex; justify-content: space-between;
+.boot-screen.hidden { opacity: 0; pointer-events: none; }
+.boot-logo {
+  font-family: 'GeistMono', monospace; font-size: 2.5rem; font-weight: 700;
+  display: flex; gap: 4px;
 }
-.desktop-preview .screen {
-  background: #1a5fb4; padding: 1.5rem;
-  font-family: 'GeistMono', monospace; font-size: 0.72rem;
-  line-height: 1.5; color: #e6edf3; min-height: 280px;
-  overflow-x: auto; white-space: pre;
+.boot-logo span { animation: bootJump 0.6s ease-in-out infinite; }
+.boot-logo span:nth-child(1) { color: #f85149; animation-delay: 0s; }
+.boot-logo span:nth-child(2) { color: #d29922; animation-delay: 0.1s; }
+.boot-logo span:nth-child(3) { color: #58a6ff; animation-delay: 0.2s; }
+.boot-logo span:nth-child(4) { color: #3fb950; animation-delay: 0.3s; }
+.boot-logo span:nth-child(5) { color: #39d353; animation-delay: 0.4s; }
+@keyframes bootJump {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-16px); }
 }
-.desktop-preview .panel {
-  background: #30363d; padding: 0.5rem 1rem;
-  font-family: 'GeistMono', monospace; font-size: 0.72rem;
-  color: #e6edf3; display: flex; justify-content: space-between;
+.boot-subtitle {
+  margin-top: 16px; font-size: 0.82rem; color: var(--muted);
+  font-family: 'GeistMono', monospace;
 }
-.desktop-preview .panel .start { color: var(--accent2); }
-
-/* ===== Arch Diagram ===== */
-.arch-diagram {
-  background: var(--bg2); border: 1px solid var(--rule);
-  border-radius: 12px; padding: 2rem; max-width: 820px; margin: 0 auto;
+.boot-loading {
+  margin-top: 24px; width: 200px; height: 3px; background: var(--bg3);
+  border-radius: 2px; overflow: hidden;
 }
-.arch-layers { display: flex; flex-direction: column; gap: 0.6rem; }
-.arch-layer {
-  display: flex; align-items: center; gap: 1rem;
-  padding: 0.8rem 1.2rem; border-radius: 8px;
-  font-family: 'GeistMono', monospace; font-size: 0.82rem;
+.boot-loading .bar {
+  height: 100%; background: var(--accent2); border-radius: 2px;
+  width: 0%; animation: bootLoad 2.5s ease-in-out forwards;
 }
-.arch-layer.l1 { background: rgba(88,166,255,0.08); border: 1px solid rgba(88,166,255,0.2); }
-.arch-layer.l2 { background: rgba(63,185,80,0.08); border: 1px solid rgba(63,185,80,0.2); }
-.arch-layer.l3 { background: rgba(163,113,247,0.08); border: 1px solid rgba(163,113,247,0.2); }
-.arch-layer.l4 { background: rgba(210,153,34,0.08); border: 1px solid rgba(210,153,34,0.2); }
-.arch-layer .tag {
-  font-size: 0.7rem; padding: 0.2rem 0.6rem; border-radius: 4px;
-  white-space: nowrap; font-weight: 700;
-}
-.arch-layer .tag.blue { background: var(--accent); color: #0d1117; }
-.arch-layer .tag.green { background: var(--accent2); color: #0d1117; }
-.arch-layer .tag.purple { background: var(--purple); color: #0d1117; }
-.arch-layer .tag.yellow { background: var(--warn); color: #0d1117; }
-.arch-layer .desc { color: var(--muted); flex: 1; }
-
-/* ===== Quick Start ===== */
-.code-block {
-  background: var(--bg2); border: 1px solid var(--rule);
-  border-radius: 10px; overflow: hidden; max-width: 720px; margin: 2rem auto 0;
-}
-.code-block .code-bar {
-  background: var(--bg3); padding: 0.5rem 1rem; font-size: 0.78rem;
-  color: var(--muted); font-family: 'GeistMono', monospace;
-  display: flex; justify-content: space-between;
-}
-.code-block pre {
-  padding: 1.2rem 1.4rem; margin: 0; overflow-x: auto;
-  font-family: 'GeistMono', monospace; font-size: 0.82rem;
-  line-height: 1.75; color: var(--ink);
-}
-.code-block .copy-btn {
-  background: none; border: 1px solid var(--rule); color: var(--muted);
-  padding: 0.2rem 0.7rem; border-radius: 4px; cursor: pointer;
-  font-family: 'GeistMono', monospace; font-size: 0.72rem;
-  transition: all 0.2s;
-}
-.code-block .copy-btn:hover { border-color: var(--muted); color: var(--ink); }
-
-/* ===== Download Cards ===== */
-.download-grid {
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem;
-  max-width: 900px; margin: 0 auto;
-}
-.download-card {
-  background: var(--bg2); border: 1px solid var(--rule);
-  border-radius: 10px; padding: 2rem 1.5rem; text-align: center;
-  transition: all 0.25s;
-}
-.download-card:hover { transform: translateY(-4px); border-color: var(--accent); box-shadow: 0 8px 30px rgba(0,0,0,0.4); }
-.download-card .dl-icon { font-size: 2.5rem; margin-bottom: 0.6rem; }
-.download-card h3 { font-size: 1.1rem; margin-bottom: 0.2rem; }
-.download-card .arch-badge { font-size: 0.72rem; color: var(--accent); font-weight: 600; margin-bottom: 0.8rem; background: rgba(88,166,255,0.12); display: inline-block; padding: 2px 10px; border-radius: 10px; }
-.download-card .size { font-size: 0.78rem; color: var(--muted); margin-bottom: 0.8rem; }
-.download-card .info { font-size: 0.8rem; color: var(--muted); margin-bottom: 1.2rem; line-height: 1.5; }
-.download-card .btn { width: 100%; justify-content: center; font-size: 0.9rem; }
-.dl-btn-32  { background: linear-gradient(135deg, #e17055, #d63031); border: 1px solid rgba(214,48,49,0.3); }
-.dl-btn-32:hover  { box-shadow: 0 4px 20px rgba(214,48,49,0.4); }
-.dl-btn-64  { background: linear-gradient(135deg, #6c5ce7, #a29bfe); border: 1px solid rgba(108,92,231,0.3); }
-.dl-btn-64:hover  { box-shadow: 0 4px 20px rgba(108,92,231,0.4); }
-.dl-btn-6432 { background: linear-gradient(135deg, #00cec9, #0984e3); border: 1px solid rgba(0,206,201,0.3); }
-.dl-btn-6432:hover { box-shadow: 0 4px 20px rgba(0,206,201,0.4); }
-
-/* ===== Footer ===== */
-footer {
-  border-top: 1px solid var(--rule); padding: 2.5rem 0;
-  text-align: center; color: var(--muted); font-size: 0.85rem;
-}
-footer a { color: var(--accent); text-decoration: none; }
-footer a:hover { text-decoration: underline; }
-
-/* ===== Responsive ===== */
-@media (max-width: 768px) {
-  .hero h1 { font-size: 2rem; }
-  .features-grid { grid-template-columns: 1fr; }
-  .download-grid { grid-template-columns: 1fr; }
-  .nav-links { display: none; }
-  .section { padding: 3rem 0; }
-  .hero { padding: 7rem 0 4rem; }
-}
-@media (max-width: 480px) {
-  .container { padding: 0 1rem; }
-  .hero h1 { font-size: 1.6rem; }
-  .hero-actions { flex-direction: column; }
-  .btn { width: 100%; justify-content: center; }
+@keyframes bootLoad {
+  0% { width: 0%; }
+  50% { width: 60%; }
+  80% { width: 85%; }
+  100% { width: 100%; }
 }
 
 /* ===== Scrollbar ===== */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
 
-/* ===== Animations ===== */
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+/* ===== Responsive ===== */
+@media (max-width: 768px) {
+  .window { width: 100% !important; left: 0 !important; border-radius: 0; }
+  .desktop-icons { display: none; }
+  .start-menu { width: 100%; left: 0; }
+  .settings-sidebar { width: 120px; }
+  .store-grid { grid-template-columns: 1fr; }
 }
-.animate { animation: fadeUp 0.6s ease-out forwards; }
 </style>
 </head>
 <body>
 
-<!-- ===== Nav ===== -->
-<nav>
-  <div class="nav-inner">
-    <a href="#" class="nav-brand">HU<span>basic</span></a>
-    <ul class="nav-links">
-      <li><a href="#features">特性</a></li>
-      <li><a href="#desktop">桌面</a></li>
-      <li><a href="#arch">架构</a></li>
-      <li><a href="#quickstart">快速开始</a></li>
-      <li><a href="#download">下载</a></li>
-    </ul>
+<!-- ===== Boot Screen ===== -->
+<div class="boot-screen" id="bootScreen">
+  <div class="boot-logo">
+    <span>B</span><span>a</span><span>s</span><span>i</span><span>c</span>
   </div>
-</nav>
+  <div class="boot-subtitle">Basic OS v2.0 — 正在启动...</div>
+  <div class="boot-loading"><div class="bar"></div></div>
+</div>
 
-<!-- ===== Hero ===== -->
-<header class="hero">
-  <div class="container">
-    <div class="hero-badge">v1.1 — 64/32/64+32 位 · 图形化桌面环境</div>
-    <h1>
-      <span class="accent">HU</span> <span class="green">basic</span>
-    </h1>
-    <p class="hero-sub">
-      一个用于学习的 x86 操作系统内核，从零构建，支持 64 位、32 位、64+32 位双内核模式。
-      包含完整的 GDT/IDT 中断系统、VGA 显示、键盘驱动、内存管理、应用管理器
-      和交互式桌面环境。
-    </p>
-    <div class="hero-actions">
-      <a href="#download" class="btn btn-primary">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        下载 Basic OS
-      </a>
-      <a href="#quickstart" class="btn btn-outline">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-        快速开始
-      </a>
-      <a href="#features" class="btn btn-outline">了解更多</a>
+<!-- ===== Desktop ===== -->
+<div class="desktop" id="desktop">
+  <div class="desktop-grid"></div>
+  <div class="desktop-icons" id="desktopIcons">
+    <div class="desk-icon" ondblclick="openWindow('browser')" data-app="browser">
+      <div class="icon-img icon-browser">🌐</div>
+      <span class="icon-label">Browser</span>
     </div>
-
-    <!-- Terminal Preview -->
-    <div class="terminal-window">
-      <div class="terminal-bar">
-        <span class="terminal-dot r"></span>
-        <span class="terminal-dot y"></span>
-        <span class="terminal-dot g"></span>
-        <span class="terminal-title">kernel> shell</span>
-      </div>
-      <div class="terminal-body">
-        <span class="output">Basic Kernel v1.1 - Booting...</span><br>
-        <span class="output">[OK] Initializing GDT...</span><br>
-        <span class="output">[OK] Initializing IDT...</span><br>
-        <span class="output">[OK] Initializing PIT (100 Hz)...</span><br>
-        <span class="output">[OK] Initializing Keyboard...</span><br>
-        <span class="output">[OK] Initializing App Manager...</span><br>
-        <span class="output">[OK] Loading Desktop...</span><br><br>
-        <span class="prompt">kernel&gt;</span> <span class="cmd">apps</span><br>
-        <span class="output">  calculator     简易计算器          [未安装]</span><br>
-        <span class="output">  guess          猜数字游戏          [未安装]</span><br>
-        <span class="output">  monitor        系统监控面板        [未安装]</span><br>
-        <span class="output">  ascii          ASCII 艺术画廊      [未安装]</span><br><br>
-        <span class="prompt">kernel&gt;</span> <span class="cmd">install calculator</span><br>
-        <span class="highlight">✓ 应用 'calculator' 安装成功!</span><br>
-        <span class="prompt">kernel&gt;</span> <span class="cmd">run calculator</span><br>
-        <span class="warn">============================================</span><br>
-        <span class="warn">              简易计算器</span><br>
-        <span class="warn">============================================</span><br>
-        <span class="prompt">calc&gt;</span> <span class="cmd">_</span>
-      </div>
+    <div class="desk-icon" ondblclick="openWindow('settings')" data-app="settings">
+      <div class="icon-img icon-settings">⚙️</div>
+      <span class="icon-label">Settings</span>
+    </div>
+    <div class="desk-icon" ondblclick="openWindow('store')" data-app="store">
+      <div class="icon-img icon-store">🛒</div>
+      <span class="icon-label">App Store</span>
+    </div>
+    <div class="desk-icon" ondblclick="openWindow('terminal')" data-app="terminal">
+      <div class="icon-img icon-terminal">⬛</div>
+      <span class="icon-label">Terminal</span>
+    </div>
+    <div class="desk-icon" ondblclick="openWindow('upgrade')" data-app="upgrade">
+      <div class="icon-img icon-settings">🔄</div>
+      <span class="icon-label">Upgrade</span>
     </div>
   </div>
-</header>
+</div>
 
-<!-- ===== Features ===== -->
-<section id="features" class="section">
-  <div class="container">
-    <div class="section-head">
-      <h2>内核特性</h2>
-      <p>从底层汇编到上层应用，一个完整的操作系统内核</p>
+<!-- ===== Taskbar ===== -->
+<div class="taskbar" id="taskbar">
+  <button class="start-btn" id="startBtn" onclick="toggleStartMenu()" title="开始">⊞</button>
+  <div class="taskbar-center" id="taskbarApps"></div>
+  <div class="taskbar-right">
+    <span class="tray-item tray-update" id="trayUpdate" onclick="openWindow('upgrade')" style="display:none">⬆ 更新可用</span>
+    <span class="tray-item tray-version" id="trayVersion" onclick="toggleTrayPopup()">v2.0</span>
+    <span class="tray-item" id="trayClock">00:00</span>
+  </div>
+</div>
+
+<!-- ===== Start Menu ===== -->
+<div class="start-menu" id="startMenu">
+  <div class="start-menu-search">
+    <input type="text" placeholder="🔍 搜索应用..." id="startSearch" oninput="filterStartApps()">
+  </div>
+  <div class="start-menu-apps" id="startApps">
+    <div class="start-app" onclick="openWindow('browser');toggleStartMenu()" data-name="Browser">
+      <span class="start-app-icon">🌐</span>
+      <span class="start-app-name">Browser</span>
     </div>
-    <div class="features-grid">
-      <div class="feature-card">
-        <span class="feature-icon">⚡</span>
-        <h3>Multiboot 引导</h3>
-        <p>兼容 GRUB 标准 Multiboot 规范，可直接被 QEMU、VirtualBox 或真机 BIOS 引导启动。</p>
-      </div>
-      <div class="feature-card">
-        <span class="feature-icon">🛡️</span>
-        <h3>GDT / IDT 中断系统</h3>
-        <p>完整实现全局描述符表和中断描述符表，支持 256 个中断向量，CPU 异常捕获和硬件 IRQ 处理。</p>
-      </div>
-      <div class="feature-card">
-        <span class="feature-icon">🖥️</span>
-        <h3>VGA 文本模式显示</h3>
-        <p>80x25 字符终端，16 种颜色，支持光标控制、滚动、清屏、十六进制/十进制数字输出。</p>
-      </div>
-      <div class="feature-card">
-        <span class="feature-icon">⌨️</span>
-        <h3>PS/2 键盘驱动</h3>
-        <p>US QWERTY 布局，环形缓冲区，支持 Shift / Caps Lock / 方向键 / 功能键 / 非阻塞输入。</p>
-      </div>
-      <div class="feature-card">
-        <span class="feature-icon">⏱️</span>
-        <h3>PIT 可编程定时器</h3>
-        <p>100Hz 时钟中断，支持获取系统运行 ticks 和秒数，提供毫秒级 sleep 阻塞等待。</p>
-      </div>
-      <div class="feature-card">
-        <span class="feature-icon">🧠</span>
-        <h3>基础内存管理</h3>
-        <p>4MB 堆空间，First-Fit 首次适配算法，支持 malloc/free 动态内存分配和空闲块合并。</p>
-      </div>
-      <div class="feature-card">
-        <span class="feature-icon">📦</span>
-        <h3>应用管理器</h3>
-        <p>内置应用商店，支持应用的注册、安装、运行和卸载，附带计算器、猜数字、监控面板等应用。</p>
-      </div>
-      <div class="feature-card">
-        <span class="feature-icon">🖼️</span>
-        <h3>桌面环境</h3>
-        <p>文本模式桌面，图标导航、开始菜单、底部面板、系统时钟、弹窗对话框，桌面 ↔ 终端自由切换。</p>
-      </div>
-      <div class="feature-card">
-        <span class="feature-icon">💻</span>
-        <h3>交互式 Shell</h3>
-        <p>支持 help / clear / echo / time / mem / apps / install / run / uninstall / desktop 等命令。</p>
-      </div>
+    <div class="start-app" onclick="openWindow('settings');toggleStartMenu()" data-name="Settings">
+      <span class="start-app-icon">⚙️</span>
+      <span class="start-app-name">Settings</span>
+    </div>
+    <div class="start-app" onclick="openWindow('store');toggleStartMenu()" data-name="Store">
+      <span class="start-app-icon">🛒</span>
+      <span class="start-app-name">App Store</span>
+    </div>
+    <div class="start-app" onclick="openWindow('terminal');toggleStartMenu()" data-name="Terminal">
+      <span class="start-app-icon">⬛</span>
+      <span class="start-app-name">Terminal</span>
+    </div>
+    <div class="start-app" onclick="openWindow('upgrade');toggleStartMenu()" data-name="Upgrade">
+      <span class="start-app-icon">🔄</span>
+      <span class="start-app-name">Upgrade</span>
+    </div>
+    <div class="start-app" onclick="openWindow('files');toggleStartMenu()" data-name="Files">
+      <span class="start-app-icon">📁</span>
+      <span class="start-app-name">Files</span>
     </div>
   </div>
-</section>
-
-<!-- ===== Desktop Preview ===== -->
-<section id="desktop" class="section" style="background: rgba(22,27,34,0.3);">
-  <div class="container">
-    <div class="section-head">
-      <h2>桌面环境</h2>
-      <p>内核启动后直接进入文本模式桌面，方向键导航，Enter 启动</p>
+  <div class="start-menu-footer">
+    <div class="start-menu-user">
+      <div class="start-menu-avatar">H</div>
+      <span>HuBasic</span>
     </div>
-    <div class="desktop-preview">
-      <div class="topbar">
-        <span>HU basic Desktop</span>
-        <span>F1=Help  Esc=Menu</span>
-      </div>
-      <div class="screen">
-┌──────────────────────────────────────────────────────────────┐
-│                                                              │
-│   [Terminal]    [Calculator]    [Guess]   [Monitor] [ASCII]  │
-│                                                              │
-│   [About]       [Reboot]                                     │
-│                                                              │
-│                                                              │
-│                                                              │
-│   ┌──────────────────────────────────────────────────────┐   │
-│   │  Start Menu                        │                 │   │
-│   │  ───────────────────────────────── │                 │   │
-│   │  > Terminal                        │                 │   │
-│   │    Calculator                      │                 │   │
-│   │    Guess Game                      │                 │   │
-│   │    Monitor                         │                 │   │
-│   │    ASCII Art                       │                 │   │
-│   │    About                           │                 │   │
-│   │    Shutdown                        │                 │   │
-│   └────────────────────────────────────┘                 │   │
-│                                                              │
-└──────────────────────────────────────────────────────────────┘
-      </div>
-      <div class="panel">
-        <span class="start">■ START</span>
-        <span>Terminal | About | Reboot</span>
-        <span>00:03:42</span>
-      </div>
+    <span class="start-menu-power" title="关机" onclick="showShutdown()">⏻</span>
+  </div>
+</div>
+
+<!-- ===== Tray Popup ===== -->
+<div class="tray-popup" id="trayPopup">
+  <div class="tray-popup-header">系统信息</div>
+  <div class="tray-popup-body">
+    <div class="tray-popup-row">
+      <span class="tray-popup-label">系统版本</span>
+      <span class="tray-popup-value" style="color:var(--accent2)">Basic OS v2.0</span>
+    </div>
+    <div class="tray-popup-row">
+      <span class="tray-popup-label">内核版本</span>
+      <span class="tray-popup-value">kernel-2.0.0-x86_64</span>
+    </div>
+    <div class="tray-popup-row">
+      <span class="tray-popup-label">架构</span>
+      <span class="tray-popup-value">x86_64 / i386</span>
+    </div>
+    <div class="tray-popup-row">
+      <span class="tray-popup-label">构建日期</span>
+      <span class="tray-popup-value">2026-07-26</span>
+    </div>
+    <div class="tray-popup-row">
+      <span class="tray-popup-label">许可证</span>
+      <span class="tray-popup-value">MIT</span>
     </div>
   </div>
-</section>
+</div>
 
-<!-- ===== Architecture ===== -->
-<section id="arch" class="section">
-  <div class="container">
-    <div class="section-head">
-      <h2>系统架构</h2>
-      <p>分层设计，从硬件抽象到用户交互</p>
+<!-- ===== Context Menu ===== -->
+<div class="context-menu" id="contextMenu">
+  <div class="context-menu-item" onclick="openWindow('settings')">⚙️ 显示设置</div>
+  <div class="context-menu-item" onclick="openWindow('terminal')">⬛ 打开终端</div>
+  <div class="context-menu-sep"></div>
+  <div class="context-menu-item" onclick="openWindow('store')">🛒 应用商店</div>
+  <div class="context-menu-item" onclick="openWindow('upgrade')">🔄 检查更新</div>
+</div>
+
+<!-- ===== Toast Container ===== -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ============================================= -->
+<!-- ===== BROWSER WINDOW ===== -->
+<!-- ============================================= -->
+<div class="window" id="win-browser" style="top:40px;left:80px;width:900px;height:580px;" data-app="browser">
+  <div class="win-titlebar" onmousedown="startDrag(event, 'win-browser')">
+    <span class="win-icon">🌐</span>
+    <span class="win-title">Basic Browser</span>
+    <div class="win-ctrl">
+      <button onclick="minimizeWindow('win-browser')">—</button>
+      <button onclick="maximizeWindow('win-browser')">□</button>
+      <button class="win-close" onclick="closeWindow('win-browser')">✕</button>
     </div>
-    <div class="arch-diagram">
-      <div class="arch-layers">
-        <div class="arch-layer l4">
-          <span class="tag yellow">用户层</span>
-          <span class="desc">桌面环境 · 交互式 Shell · 内置应用（计算器/游戏/监控）</span>
+  </div>
+  <div class="browser-tabs" id="browserTabs">
+    <div class="browser-tab active" data-url="home" onclick="switchBrowserTab(this,'home')">
+      🏠 Basic OS<span class="tab-close" onclick="event.stopPropagation();closeBrowserTab(this)">✕</span>
+    </div>
+  </div>
+  <div class="browser-toolbar">
+    <div class="browser-nav-btns">
+      <button title="后退">◀</button>
+      <button title="前进">▶</button>
+      <button title="刷新" onclick="refreshBrowser()">↻</button>
+    </div>
+    <div class="browser-url-bar">
+      <span class="url-icon">🔒</span>
+      <input type="text" value="https://huhubasic.github.io/Basic-OS" id="browserUrl" onkeydown="if(event.key==='Enter')navigateBrowser()">
+    </div>
+    <button style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;padding:4px 8px" title="书签">☆</button>
+    <button style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;padding:4px 8px" title="扩展">🧩</button>
+    <button style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;padding:4px 8px" title="菜单">⋮</button>
+  </div>
+  <div class="browser-content" id="browserContent">
+    <iframe id="browserFrame" src="about:blank" style="width:100%;height:100%;border:none;display:none"></iframe>
+    <div id="browserHome" style="padding:40px;text-align:center;background:linear-gradient(180deg,#1a1a2e,#16213e,#0f3460);min-height:100%;color:#fff;font-family:'Bricolage','Noto Sans CJK SC',sans-serif">
+      <div style="font-size:3rem;margin-bottom:8px">🌐</div>
+      <h1 style="font-size:1.8rem;margin-bottom:8px;font-weight:700">Basic Browser</h1>
+      <p style="color:rgba(255,255,255,0.6);margin-bottom:32px">基于 Basic OS 的现代浏览器 — 快速、安全、简洁</p>
+      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;max-width:600px;margin:0 auto 32px">
+        <div style="background:rgba(255,255,255,0.08);border-radius:12px;padding:16px 20px;cursor:pointer;flex:1;min-width:120px" onclick="navigateTo('https://github.com/HuHuBasic')">
+          <div style="font-size:1.5rem;margin-bottom:4px">🐙</div>
+          <div style="font-size:0.78rem">GitHub</div>
         </div>
-        <div class="arch-layer l3">
-          <span class="tag purple">应用框架</span>
-          <span class="desc">应用管理器（注册/安装/运行/卸载）· 应用商店</span>
+        <div style="background:rgba(255,255,255,0.08);border-radius:12px;padding:16px 20px;cursor:pointer;flex:1;min-width:120px" onclick="navigateTo('https://huhubasic.github.io/Basic-OS')">
+          <div style="font-size:1.5rem;margin-bottom:4px">🖥️</div>
+          <div style="font-size:0.78rem">Basic OS</div>
         </div>
-        <div class="arch-layer l2">
-          <span class="tag green">内核服务</span>
-          <span class="desc">VGA 显示驱动 · 键盘驱动 · 定时器 · 内存管理 · 字符串工具</span>
+        <div style="background:rgba(255,255,255,0.08);border-radius:12px;padding:16px 20px;cursor:pointer;flex:1;min-width:120px" onclick="openWindow('store')">
+          <div style="font-size:1.5rem;margin-bottom:4px">🛒</div>
+          <div style="font-size:0.78rem">App Store</div>
         </div>
-        <div class="arch-layer l1">
-          <span class="tag blue">硬件抽象</span>
-          <span class="desc">Multiboot 启动 · GDT 全局描述符表 · IDT 中断系统 · PIC 重映射 · I/O 端口</span>
+        <div style="background:rgba(255,255,255,0.08);border-radius:12px;padding:16px 20px;cursor:pointer;flex:1;min-width:120px" onclick="openWindow('settings')">
+          <div style="font-size:1.5rem;margin-bottom:4px">⚙️</div>
+          <div style="font-size:0.78rem">Settings</div>
         </div>
       </div>
-    </div>
-  </div>
-</section>
-
-<!-- ===== Quick Start ===== -->
-<section id="quickstart" class="section" style="background: rgba(22,27,34,0.3);">
-  <div class="container">
-    <div class="section-head">
-      <h2>快速开始</h2>
-      <p>三行命令，立即运行</p>
-    </div>
-    <div class="code-block">
-      <div class="code-bar">
-        <span>bash</span>
-        <button class="copy-btn" onclick="navigator.clipboard.writeText('unzip basic-kernel.zip && cd basic-kernel && ./install.sh')">复制</button>
-      </div>
-      <pre># 1. 解压
-unzip basic-kernel.zip
-cd basic-kernel
-
-# 2. 一键安装并运行
-./install.sh
-
-# 或者手动编译运行
-make clean && make && make run</pre>
-    </div>
-    <div class="code-block" style="margin-top: 1.5rem;">
-      <div class="code-bar">
-        <span>bash — 真机安装</span>
-        <button class="copy-btn" onclick="navigator.clipboard.writeText('sudo ./install-to-pc.sh')">复制</button>
-      </div>
-      <pre># 安装到电脑（需要 root）
-sudo ./install-to-pc.sh
-
-# 支持四种方式:
-#   1. 制作启动 U 盘
-#   2. 添加到 GRUB 双启动
-#   3. 安装到独立分区
-#   4. kexec 热启动</pre>
-    </div>
-  </div>
-</section>
-
-<!-- ===== Download ===== -->
-<section id="download" class="section">
-  <div class="container">
-    <div class="section-head">
-      <h2>💿 下载 Basic OS</h2>
-      <p>选择适合你的版本，刻录到 U 盘或加载到虚拟机即可运行</p>
-    </div>
-    <div class="download-grid">
-      <div class="download-card">
-        <div class="dl-icon">💾</div>
-        <h3>Basic OS 32-bit</h3>
-        <span class="arch-badge">x86 Protected Mode</span>
-        <p class="info">32 位保护模式内核<br>含完整桌面环境、Shell、应用管理器、网络协议栈</p>
-        <p class="size">ISO 镜像 · 5.0 MB</p>
-        <a href="os/basic-os-32.iso" class="btn btn-primary dl-btn-32" download>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          下载 32 位
-        </a>
-      </div>
-      <div class="download-card">
-        <div class="dl-icon">⚡</div>
-        <h3>Basic OS 64-bit</h3>
-        <span class="arch-badge">x86_64 Long Mode</span>
-        <p class="info">64 位长模式内核<br>4 级页表、高半核映射、Multiboot2 引导</p>
-        <p class="size">ISO 镜像 · 5.0 MB</p>
-        <a href="os/basic-os-64.iso" class="btn btn-primary dl-btn-64" download>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          下载 64 位
-        </a>
-      </div>
-      <div class="download-card">
-        <div class="dl-icon">🔰</div>
-        <h3>Basic OS 64+32-bit</h3>
-        <span class="arch-badge">双内核合辑</span>
-        <p class="info">一张 ISO 包含两个内核<br>GRUB 启动菜单可选 64 位或 32 位模式</p>
-        <p class="size">ISO 镜像 · 5.0 MB</p>
-        <a href="os/basic-os-64-32.iso" class="btn btn-primary dl-btn-6432" download>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          下载 64+32 位
-        </a>
+      <div style="background:rgba(255,255,255,0.05);border-radius:10px;padding:16px;max-width:600px;margin:0 auto;text-align:left">
+        <div style="font-size:0.72rem;color:rgba(255,255,255,0.5);margin-bottom:8px">🔍 搜索或输入网址</div>
+        <div style="font-size:0.78rem;color:rgba(255,255,255,0.4)">使用地址栏导航到任何网站...</div>
       </div>
     </div>
   </div>
-</section>
+</div>
 
-<!-- ===== Footer ===== -->
-<footer>
-  <div class="container">
-    <p>
-      <strong>HU basic</strong> — x86 操作系统内核 · 64/32/64+32 位 · 图形化桌面环境
-    </p>
-    <p style="margin-top: 0.5rem;">
-      MIT License · 构建于 2026 ·
-      <a href="#">HU basic</a>
-    </p>
+<!-- ============================================= -->
+<!-- ===== SETTINGS WINDOW ===== -->
+<!-- ============================================= -->
+<div class="window" id="win-settings" style="top:60px;left:120px;width:700px;height:500px;" data-app="settings">
+  <div class="win-titlebar" onmousedown="startDrag(event, 'win-settings')">
+    <span class="win-icon">⚙️</span>
+    <span class="win-title">系统设置</span>
+    <div class="win-ctrl">
+      <button onclick="minimizeWindow('win-settings')">—</button>
+      <button onclick="maximizeWindow('win-settings')">□</button>
+      <button class="win-close" onclick="closeWindow('win-settings')">✕</button>
+    </div>
   </div>
-</footer>
+  <div class="win-body" style="flex-direction:row">
+    <div class="settings-sidebar">
+      <div class="settings-nav-item active" onclick="switchSettingsTab(this,'sys-info')">🖥️ 系统信息</div>
+      <div class="settings-nav-item" onclick="switchSettingsTab(this,'display')">🖼️ 显示</div>
+      <div class="settings-nav-item" onclick="switchSettingsTab(this,'network')">🌐 网络</div>
+      <div class="settings-nav-item" onclick="switchSettingsTab(this,'privacy')">🔒 隐私与安全</div>
+      <div class="settings-nav-item" onclick="switchSettingsTab(this,'about')">ℹ️ 关于</div>
+    </div>
+    <div class="settings-content">
+      <!-- System Info -->
+      <div class="settings-section active" id="sec-sys-info">
+        <h3>🖥️ 系统信息</h3>
+        <div class="settings-group">
+          <h4>设备信息</h4>
+          <div class="settings-row"><label>设备名称</label><span class="value">HU-Basic-PC</span></div>
+          <div class="settings-row"><label>处理器</label><span class="value">x86_64 QEMU Virtual CPU</span></div>
+          <div class="settings-row"><label>内存</label><span class="value">256 MB</span></div>
+          <div class="settings-row"><label>系统类型</label><span class="value">64-bit / 32-bit 双内核</span></div>
+        </div>
+        <div class="settings-group">
+          <h4>系统版本</h4>
+          <div class="settings-row">
+            <label>当前版本</label>
+            <span class="version-badge">Basic OS v2.0</span>
+          </div>
+          <div class="settings-row"><label>内核版本</label><span class="value">kernel-2.0.0-x86_64</span></div>
+          <div class="settings-row"><label>构建号</label><span class="value">20260726.1</span></div>
+          <div class="settings-row"><label>桌面环境</label><span class="value">Basic Desktop v2.0</span></div>
+        </div>
+      </div>
+      <!-- Display -->
+      <div class="settings-section" id="sec-display">
+        <h3>🖼️ 显示设置</h3>
+        <div class="settings-group">
+          <h4>桌面</h4>
+          <div class="settings-row">
+            <label>桌面背景</label>
+            <select class="settings-select" onchange="changeWallpaper(this.value)">
+              <option value="default">默认（深蓝）</option>
+              <option value="dark">暗色</option>
+              <option value="cosmic">宇宙</option>
+            </select>
+          </div>
+          <div class="settings-row">
+            <label>暗色模式</label>
+            <div class="settings-toggle on" onclick="this.classList.toggle('on')"></div>
+          </div>
+          <div class="settings-row">
+            <label>透明效果</label>
+            <div class="settings-toggle on" onclick="this.classList.toggle('on')"></div>
+          </div>
+          <div class="settings-row">
+            <label>动画效果</label>
+            <div class="settings-toggle on" onclick="this.classList.toggle('on')"></div>
+          </div>
+        </div>
+        <div class="settings-group">
+          <h4>分辨率</h4>
+          <div class="settings-row">
+            <label>缩放</label>
+            <select class="settings-select">
+              <option>100%</option>
+              <option>125%</option>
+              <option>150%</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <!-- Network -->
+      <div class="settings-section" id="sec-network">
+        <h3>🌐 网络设置</h3>
+        <div class="settings-group">
+          <h4>连接状态</h4>
+          <div class="settings-row"><label>状态</label><span class="value" style="color:var(--accent2)">● 已连接</span></div>
+          <div class="settings-row"><label>IP 地址</label><span class="value">10.0.2.15</span></div>
+          <div class="settings-row"><label>网关</label><span class="value">10.0.2.2</span></div>
+          <div class="settings-row"><label>DNS</label><span class="value">8.8.8.8</span></div>
+        </div>
+      </div>
+      <!-- Privacy -->
+      <div class="settings-section" id="sec-privacy">
+        <h3>🔒 隐私与安全</h3>
+        <div class="settings-group">
+          <h4>安全</h4>
+          <div class="settings-row">
+            <label>防火墙</label>
+            <div class="settings-toggle on" onclick="this.classList.toggle('on')"></div>
+          </div>
+          <div class="settings-row">
+            <label>自动更新</label>
+            <div class="settings-toggle on" onclick="this.classList.toggle('on')"></div>
+          </div>
+        </div>
+        <div class="settings-group">
+          <h4>数据</h4>
+          <button class="settings-btn danger" style="margin-top:8px" onclick="showToast('缓存已清除','success')">清除缓存</button>
+        </div>
+      </div>
+      <!-- About -->
+      <div class="settings-section" id="sec-about">
+        <h3>ℹ️ 关于 Basic OS</h3>
+        <div style="text-align:center;padding:24px 0">
+          <div style="font-size:3rem;margin-bottom:12px">🖥️</div>
+          <h2 style="font-size:1.4rem;margin-bottom:4px">HU basic OS</h2>
+          <p style="color:var(--muted);margin-bottom:16px">一个用于学习的 x86 操作系统内核</p>
+          <span class="version-badge" style="font-size:1rem;padding:6px 20px">v2.0</span>
+        </div>
+        <div class="settings-group">
+          <h4>技术规格</h4>
+          <div class="settings-row"><label>架构</label><span class="value">x86_64 / i386</span></div>
+          <div class="settings-row"><label>引导</label><span class="value">Multiboot / Multiboot2</span></div>
+          <div class="settings-row"><label>显示</label><span class="value">VGA 文本模式 80x25</span></div>
+          <div class="settings-row"><label>内核类型</label><span class="value">单内核 (Monolithic)</span></div>
+          <div class="settings-row"><label>许可证</label><span class="value">MIT License</span></div>
+          <div class="settings-row"><label>GitHub</label><span class="value"><a href="https://github.com/HuHuBasic" target="_blank" style="color:var(--accent)">HuHuBasic</a></span></div>
+        </div>
+        <div style="text-align:center;margin-top:16px">
+          <button class="settings-btn" onclick="openWindow('upgrade')">🔄 检查更新</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================= -->
+<!-- ===== SYSTEM UPGRADE WINDOW ===== -->
+<!-- ============================================= -->
+<div class="window" id="win-upgrade" style="top:80px;left:160px;width:520px;height:480px;" data-app="upgrade">
+  <div class="win-titlebar" onmousedown="startDrag(event, 'win-upgrade')">
+    <span class="win-icon">🔄</span>
+    <span class="win-title">系统升级</span>
+    <div class="win-ctrl">
+      <button onclick="minimizeWindow('win-upgrade')">—</button>
+      <button onclick="maximizeWindow('win-upgrade')">□</button>
+      <button class="win-close" onclick="closeWindow('win-upgrade')">✕</button>
+    </div>
+  </div>
+  <div class="win-body">
+    <div class="upgrade-header">
+      <div class="upgrade-icon">🔄</div>
+      <h3>系统升级</h3>
+      <p>保持系统最新，获取最新功能和安全修复</p>
+    </div>
+    <div class="upgrade-body">
+      <div class="upgrade-current">
+        <div>
+          <div class="ver-label">当前版本</div>
+          <div class="ver-num" style="color:var(--accent2)">Basic OS v2.0</div>
+        </div>
+        <button class="upgrade-btn primary" onclick="checkUpdate()" id="checkUpdateBtn">检查更新</button>
+      </div>
+      <div class="upgrade-changelog">
+        <h4>📋 更新日志</h4>
+        <div class="upgrade-item">
+          <span class="ver-tag new">v2.0</span>
+          <span style="font-size:0.78rem">全新桌面环境、现代浏览器、系统设置、应用商店、系统升级功能</span>
+        </div>
+        <div class="upgrade-item">
+          <span class="ver-tag">v1.1</span>
+          <span style="font-size:0.78rem;color:var(--muted)">新增 64+32 双内核支持、QEMU 配置文件</span>
+        </div>
+        <div class="upgrade-item">
+          <span class="ver-tag">v1.0</span>
+          <span style="font-size:0.78rem;color:var(--muted)">初始版本：GDT/IDT、VGA 显示、键盘驱动、内存管理、Shell</span>
+        </div>
+      </div>
+      <div class="upgrade-progress" id="upgradeProgress">
+        <div class="bar" id="upgradeBar"></div>
+      </div>
+      <p id="upgradeStatus" style="text-align:center;font-size:0.78rem;color:var(--muted);display:none"></p>
+    </div>
+    <div class="upgrade-actions">
+      <button class="upgrade-btn secondary" onclick="closeWindow('win-upgrade')">关闭</button>
+      <button class="upgrade-btn primary" id="upgradeInstallBtn" style="display:none" onclick="installUpdate()">安装更新</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================= -->
+<!-- ===== APP STORE WINDOW ===== -->
+<!-- ============================================= -->
+<div class="window" id="win-store" style="top:50px;left:100px;width:720px;height:550px;" data-app="store">
+  <div class="win-titlebar" onmousedown="startDrag(event, 'win-store')">
+    <span class="win-icon">🛒</span>
+    <span class="win-title">Basic 应用商店</span>
+    <div class="win-ctrl">
+      <button onclick="minimizeWindow('win-store')">—</button>
+      <button onclick="maximizeWindow('win-store')">□</button>
+      <button class="win-close" onclick="closeWindow('win-store')">✕</button>
+    </div>
+  </div>
+  <div class="win-body">
+    <div class="store-header">
+      <h3>🛒 Basic 应用商店</h3>
+      <p>探索、安装和管理你的应用 — 全部开源免费</p>
+    </div>
+    <div class="store-search">
+      <input type="text" placeholder="🔍 搜索应用..." id="storeSearch" oninput="filterStoreApps()">
+    </div>
+    <div class="store-tabs">
+      <button class="store-tab active" onclick="switchStoreTab(this,'browse')">🏠 浏览</button>
+      <button class="store-tab" onclick="switchStoreTab(this,'installed')">📥 已安装</button>
+      <button class="store-tab" onclick="switchStoreTab(this,'submit')">📤 提交应用</button>
+    </div>
+    <!-- Browse -->
+    <div class="store-content" id="storeBrowse">
+      <div class="store-grid" id="storeGrid">
+        <!-- Apps populated by JS -->
+      </div>
+    </div>
+    <!-- App Detail -->
+    <div class="store-detail" id="storeDetail">
+      <button class="store-detail-back" onclick="showStoreBrowse()">← 返回商店</button>
+      <div class="store-detail-hero" id="storeDetailHero"></div>
+      <div class="store-detail-actions" id="storeDetailActions"></div>
+    </div>
+    <!-- Submit Form -->
+    <div class="submit-form" id="storeSubmit">
+      <h3>📤 提交新应用</h3>
+      <p style="color:var(--muted);font-size:0.78rem;margin-bottom:16px">将你的应用提交到 Basic 应用商店，让更多人使用</p>
+      <div class="form-group">
+        <label>应用名称 *</label>
+        <input type="text" id="appName" placeholder="输入应用名称">
+      </div>
+      <div class="form-group">
+        <label>开发者名称 *</label>
+        <input type="text" id="appDev" placeholder="你的名字或组织名">
+      </div>
+      <div class="form-group">
+        <label>应用分类 *</label>
+        <select id="appCategory">
+          <option value="">选择分类</option>
+          <option value="tools">🛠️ 工具</option>
+          <option value="games">🎮 游戏</option>
+          <option value="dev">💻 开发</option>
+          <option value="media">🎵 媒体</option>
+          <option value="network">🌐 网络</option>
+          <option value="education">📚 教育</option>
+          <option value="other">📦 其他</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>应用描述 *</label>
+        <textarea id="appDesc" placeholder="简要描述你的应用功能和特点"></textarea>
+      </div>
+      <div class="form-group">
+        <label>GitHub 仓库地址</label>
+        <input type="text" id="appRepo" placeholder="https://github.com/username/repo">
+        <span class="hint">可选，提供源码地址方便审核</span>
+      </div>
+      <div class="form-group">
+        <label>联系邮箱 *</label>
+        <input type="email" id="appEmail" placeholder="your@email.com">
+      </div>
+      <div class="form-group">
+        <label>应用图标 URL</label>
+        <input type="text" id="appIcon" placeholder="https://example.com/icon.png">
+        <span class="hint">可选，建议 128x128 PNG</span>
+      </div>
+      <div class="form-actions">
+        <button class="form-submit-btn" onclick="submitApp()">提交申请</button>
+        <button class="form-cancel-btn" onclick="switchStoreTab(document.querySelector('.store-tab'),'browse')">取消</button>
+      </div>
+    </div>
+    <!-- Submit Success -->
+    <div class="submit-success" id="storeSubmitSuccess">
+      <div class="success-icon">✅</div>
+      <h3>提交成功！</h3>
+      <p>你的应用已提交审核，我们会在 3-5 个工作日内完成审核。</p>
+      <p style="color:var(--muted);font-size:0.75rem;margin-top:8px">审核通过后，应用将出现在应用商店中。</p>
+      <button class="form-submit-btn" style="margin-top:16px" onclick="resetSubmitForm()">提交另一个应用</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================= -->
+<!-- ===== TERMINAL WINDOW ===== -->
+<!-- ============================================= -->
+<div class="window" id="win-terminal" style="top:70px;left:140px;width:600px;height:400px;" data-app="terminal">
+  <div class="win-titlebar" onmousedown="startDrag(event, 'win-terminal')">
+    <span class="win-icon">⬛</span>
+    <span class="win-title">Terminal — kernel> shell</span>
+    <div class="win-ctrl">
+      <button onclick="minimizeWindow('win-terminal')">—</button>
+      <button onclick="maximizeWindow('win-terminal')">□</button>
+      <button class="win-close" onclick="closeWindow('win-terminal')">✕</button>
+    </div>
+  </div>
+  <div class="terminal-body" id="terminalBody" onclick="document.getElementById('terminalInput').focus()">
+    <span class="output">Basic Kernel v2.0 - 启动成功</span><br>
+    <span class="output">[OK] GDT/IDT 初始化完成</span><br>
+    <span class="output">[OK] 键盘驱动加载完成</span><br>
+    <span class="output">[OK] 内存管理初始化完成</span><br>
+    <span class="output">[OK] 桌面环境加载完成</span><br>
+    <span class="output">[OK] 应用管理器就绪</span><br><br>
+    <span class="output">输入 'help' 查看可用命令</span><br><br>
+    <span class="prompt">kernel&gt;</span> <span class="cmd"><input type="text" id="terminalInput" style="background:none;border:none;color:var(--ink);font-family:'GeistMono',monospace;font-size:0.78rem;outline:none;width:200px" onkeydown="handleTerminalInput(event)"></span>
+  </div>
+</div>
+
+<!-- ===== FILES WINDOW ===== -->
+<div class="window" id="win-files" style="top:90px;left:180px;width:600px;height:420px;" data-app="files">
+  <div class="win-titlebar" onmousedown="startDrag(event, 'win-files')">
+    <span class="win-icon">📁</span>
+    <span class="win-title">文件管理器</span>
+    <div class="win-ctrl">
+      <button onclick="minimizeWindow('win-files')">—</button>
+      <button onclick="maximizeWindow('win-files')">□</button>
+      <button class="win-close" onclick="closeWindow('win-files')">✕</button>
+    </div>
+  </div>
+  <div class="win-body" style="padding:20px">
+    <div style="display:flex;gap:12px;flex-wrap:wrap">
+      <div style="background:var(--bg3);border-radius:8px;padding:16px;text-align:center;width:100px;cursor:pointer" onclick="showToast('下载页面已打开','info')">
+        <div style="font-size:1.5rem">📥</div>
+        <div style="font-size:0.7rem;margin-top:4px">Downloads</div>
+      </div>
+      <div style="background:var(--bg3);border-radius:8px;padding:16px;text-align:center;width:100px;cursor:pointer" onclick="showToast('文档为空','info')">
+        <div style="font-size:1.5rem">📄</div>
+        <div style="font-size:0.7rem;margin-top:4px">Documents</div>
+      </div>
+      <div style="background:var(--bg3);border-radius:8px;padding:16px;text-align:center;width:100px;cursor:pointer" onclick="showToast('图片为空','info')">
+        <div style="font-size:1.5rem">🖼️</div>
+        <div style="font-size:0.7rem;margin-top:4px">Pictures</div>
+      </div>
+      <div style="background:var(--bg3);border-radius:8px;padding:16px;text-align:center;width:100px;cursor:pointer" onclick="showToast('音乐为空','info')">
+        <div style="font-size:1.5rem">🎵</div>
+        <div style="font-size:0.7rem;margin-top:4px">Music</div>
+      </div>
+    </div>
+    <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--rule)">
+      <h4 style="font-size:0.82rem;margin-bottom:8px">💿 ISO 镜像文件</h4>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <a href="basic-os-32.iso" download style="color:var(--accent);text-decoration:none;font-size:0.78rem;display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:4px" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background='none'">💾 basic-os-32.iso <span style="color:var(--muted);font-size:0.65rem">5.0 MB</span></a>
+        <a href="basic-os-64.iso" download style="color:var(--accent);text-decoration:none;font-size:0.78rem;display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:4px" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background='none'">⚡ basic-os-64.iso <span style="color:var(--muted);font-size:0.65rem">5.0 MB</span></a>
+        <a href="basic-os-64-32.iso" download style="color:var(--accent);text-decoration:none;font-size:0.78rem;display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:4px" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background='none'">🔰 basic-os-64-32.iso <span style="color:var(--muted);font-size:0.65rem">5.0 MB</span></a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// =============================================
+// BOOT SCREEN
+// =============================================
+setTimeout(() => {
+  document.getElementById('bootScreen').classList.add('hidden');
+  setTimeout(() => { document.getElementById('bootScreen').style.display = 'none'; }, 500);
+}, 2800);
+
+// =============================================
+// CLOCK
+// =============================================
+function updateClock() {
+  const now = new Date();
+  document.getElementById('trayClock').textContent =
+    now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+}
+updateClock();
+setInterval(updateClock, 30000);
+
+// =============================================
+// WINDOW MANAGEMENT
+// =============================================
+let windowZIndex = 10;
+let openWindows = {};
+
+function openWindow(app) {
+  const winId = 'win-' + app;
+  const win = document.getElementById(winId);
+  if (!win) return;
+
+  win.classList.add('open');
+  win.style.zIndex = ++windowZIndex;
+  focusWindow(winId);
+  openWindows[app] = true;
+  updateTaskbar();
+  updateDesktopIcons();
+}
+
+function closeWindow(winId) {
+  const win = document.getElementById(winId);
+  if (!win) return;
+  win.classList.remove('open', 'maximized', 'focused');
+  const app = win.dataset.app;
+  if (app) {
+    openWindows[app] = false;
+    updateTaskbar();
+    updateDesktopIcons();
+  }
+}
+
+function minimizeWindow(winId) {
+  const win = document.getElementById(winId);
+  if (!win) return;
+  win.classList.remove('open', 'focused');
+  const app = win.dataset.app;
+  if (app) {
+    openWindows[app] = false;
+    updateTaskbar();
+  }
+}
+
+function maximizeWindow(winId) {
+  const win = document.getElementById(winId);
+  if (!win) return;
+  win.classList.toggle('maximized');
+}
+
+function focusWindow(winId) {
+  document.querySelectorAll('.window.focused').forEach(w => w.classList.remove('focused'));
+  const win = document.getElementById(winId);
+  if (win) {
+    win.classList.add('focused');
+    win.style.zIndex = ++windowZIndex;
+    const app = win.dataset.app;
+    if (app) {
+      openWindows[app] = true;
+      updateTaskbar();
+    }
+  }
+}
+
+function updateTaskbar() {
+  const container = document.getElementById('taskbarApps');
+  const apps = [
+    { id: 'browser', icon: '🌐', name: 'Browser' },
+    { id: 'settings', icon: '⚙️', name: 'Settings' },
+    { id: 'store', icon: '🛒', name: 'Store' },
+    { id: 'terminal', icon: '⬛', name: 'Terminal' },
+    { id: 'upgrade', icon: '🔄', name: 'Upgrade' },
+    { id: 'files', icon: '📁', name: 'Files' }
+  ];
+  container.innerHTML = '';
+  apps.forEach(a => {
+    if (openWindows[a.id]) {
+      const btn = document.createElement('button');
+      btn.className = 'task-btn active';
+      btn.innerHTML = a.icon + ' ' + a.name;
+      btn.onclick = () => {
+        const win = document.getElementById('win-' + a.id);
+        if (win && win.classList.contains('open')) {
+          focusWindow('win-' + a.id);
+        } else {
+          openWindow(a.id);
+        }
+      };
+      container.appendChild(btn);
+    }
+  });
+}
+
+function updateDesktopIcons() {
+  // Highlight desktop icons for open windows
+  document.querySelectorAll('.desk-icon').forEach(icon => {
+    const app = icon.dataset.app;
+    if (openWindows[app]) {
+      icon.style.background = 'rgba(255,255,255,0.08)';
+    }
+  });
+}
+
+// =============================================
+// WINDOW DRAG
+// =============================================
+let dragState = null;
+document.addEventListener('mousemove', (e) => {
+  if (!dragState) return;
+  const win = document.getElementById(dragState.winId);
+  if (!win) return;
+  const dx = e.clientX - dragState.startX;
+  const dy = e.clientY - dragState.startY;
+  win.style.left = (dragState.origLeft + dx) + 'px';
+  win.style.top = (dragState.origTop + dy) + 'px';
+});
+document.addEventListener('mouseup', () => { dragState = null; });
+
+function startDrag(e, winId) {
+  if (e.target.closest('.win-ctrl')) return; // Don't drag from control buttons
+  const win = document.getElementById(winId);
+  if (!win) return;
+  dragState = {
+    winId,
+    startX: e.clientX,
+    startY: e.clientY,
+    origLeft: win.offsetLeft,
+    origTop: win.offsetTop
+  };
+  focusWindow(winId);
+}
+
+// Click on window to focus
+document.addEventListener('mousedown', (e) => {
+  const win = e.target.closest('.window');
+  if (win) {
+    focusWindow(win.id);
+  }
+});
+
+// Click on desktop to close start menu
+document.getElementById('desktop').addEventListener('click', (e) => {
+  if (!e.target.closest('.window') && !e.target.closest('.desk-icon')) {
+    document.getElementById('startMenu').classList.remove('show');
+    document.getElementById('startBtn').classList.remove('active');
+    document.getElementById('trayPopup').classList.remove('show');
+    document.getElementById('contextMenu').classList.remove('show');
+  }
+});
+
+// =============================================
+// START MENU
+// =============================================
+function toggleStartMenu() {
+  const menu = document.getElementById('startMenu');
+  const btn = document.getElementById('startBtn');
+  menu.classList.toggle('show');
+  btn.classList.toggle('active');
+  if (menu.classList.contains('show')) {
+    document.getElementById('startSearch').focus();
+  }
+}
+
+function filterStartApps() {
+  const q = document.getElementById('startSearch').value.toLowerCase();
+  document.querySelectorAll('#startApps .start-app').forEach(app => {
+    const name = app.dataset.name.toLowerCase();
+    app.style.display = name.includes(q) ? '' : 'none';
+  });
+}
+
+// =============================================
+// TRAY POPUP
+// =============================================
+function toggleTrayPopup() {
+  document.getElementById('trayPopup').classList.toggle('show');
+  document.getElementById('startMenu').classList.remove('show');
+}
+
+// =============================================
+// CONTEXT MENU
+// =============================================
+document.getElementById('desktop').addEventListener('contextmenu', (e) => {
+  e.preventDefault();
+  const menu = document.getElementById('contextMenu');
+  menu.style.left = e.clientX + 'px';
+  menu.style.top = e.clientY + 'px';
+  menu.classList.add('show');
+});
+
+// =============================================
+// TOAST NOTIFICATIONS
+// =============================================
+function showToast(msg, type = 'info') {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = 'toast ' + type;
+  toast.textContent = msg;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transition = 'opacity 0.3s';
+    setTimeout(() => toast.remove(), 300);
+  }, 2500);
+}
+
+// =============================================
+// SYSTEM UPGRADE
+// =============================================
+function checkUpdate() {
+  const btn = document.getElementById('checkUpdateBtn');
+  const progress = document.getElementById('upgradeProgress');
+  const bar = document.getElementById('upgradeBar');
+  const status = document.getElementById('upgradeStatus');
+  const installBtn = document.getElementById('upgradeInstallBtn');
+
+  btn.disabled = true;
+  btn.textContent = '检查中...';
+  progress.style.display = 'block';
+  bar.style.width = '0%';
+  status.style.display = 'block';
+  status.textContent = '正在连接更新服务器...';
+  status.style.color = 'var(--muted)';
+
+  let w = 0;
+  const interval = setInterval(() => {
+    w += Math.random() * 20;
+    if (w >= 100) {
+      w = 100;
+      clearInterval(interval);
+      bar.style.width = '100%';
+      status.textContent = '✅ 发现新版本 Basic OS v2.0.1 — 包含性能优化和 Bug 修复';
+      status.style.color = 'var(--accent2)';
+      installBtn.style.display = 'inline-block';
+      btn.textContent = '重新检查';
+      btn.disabled = false;
+      document.getElementById('trayUpdate').style.display = 'flex';
+    } else {
+      bar.style.width = w + '%';
+      status.textContent = '正在检查更新... ' + Math.round(w) + '%';
+    }
+  }, 200);
+}
+
+function installUpdate() {
+  const progress = document.getElementById('upgradeProgress');
+  const bar = document.getElementById('upgradeBar');
+  const status = document.getElementById('upgradeStatus');
+  const installBtn = document.getElementById('upgradeInstallBtn');
+
+  installBtn.disabled = true;
+  installBtn.textContent = '安装中...';
+  bar.style.width = '0%';
+  status.textContent = '正在下载更新...';
+  status.style.color = 'var(--muted)';
+
+  let w = 0;
+  const interval = setInterval(() => {
+    w += Math.random() * 15;
+    if (w >= 100) {
+      w = 100;
+      clearInterval(interval);
+      bar.style.width = '100%';
+      status.textContent = '✅ 更新安装完成！请重启系统以应用更新。';
+      status.style.color = 'var(--accent2)';
+      installBtn.textContent = '立即重启';
+      installBtn.disabled = false;
+      installBtn.onclick = () => {
+        document.getElementById('bootScreen').style.display = 'flex';
+        document.getElementById('bootScreen').classList.remove('hidden');
+        document.querySelector('.boot-loading .bar').style.animation = 'none';
+        document.querySelector('.boot-loading .bar').offsetHeight;
+        document.querySelector('.boot-loading .bar').style.animation = 'bootLoad 2.5s ease-in-out forwards';
+        setTimeout(() => {
+          document.getElementById('bootScreen').classList.add('hidden');
+          setTimeout(() => { document.getElementById('bootScreen').style.display = 'none'; }, 500);
+          document.getElementById('trayVersion').textContent = 'v2.0.1';
+          document.getElementById('trayUpdate').style.display = 'none';
+          installBtn.style.display = 'none';
+          showToast('系统已更新到 v2.0.1', 'success');
+        }, 2800);
+      };
+    } else {
+      bar.style.width = w + '%';
+      if (w < 40) status.textContent = '正在下载更新... ' + Math.round(w) + '%';
+      else if (w < 80) status.textContent = '正在安装更新... ' + Math.round(w) + '%';
+      else status.textContent = '正在配置系统... ' + Math.round(w) + '%';
+    }
+  }, 150);
+}
+
+// =============================================
+// SETTINGS TABS
+// =============================================
+function switchSettingsTab(el, section) {
+  document.querySelectorAll('.settings-nav-item').forEach(i => i.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.settings-section').forEach(s => s.classList.remove('active'));
+  document.getElementById('sec-' + section).classList.add('active');
+}
+
+// =============================================
+// BROWSER
+// =============================================
+function switchBrowserTab(el, url) {
+  document.querySelectorAll('#browserTabs .browser-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  if (url === 'home') {
+    document.getElementById('browserHome').style.display = '';
+    document.getElementById('browserFrame').style.display = 'none';
+  }
+}
+
+function closeBrowserTab(el) {
+  const tab = el.parentElement;
+  const tabs = document.querySelectorAll('#browserTabs .browser-tab');
+  if (tabs.length <= 1) return;
+  if (tab.classList.contains('active')) {
+    const prev = tab.previousElementSibling || tab.nextElementSibling;
+    if (prev) prev.click();
+  }
+  tab.remove();
+}
+
+function navigateBrowser() {
+  const url = document.getElementById('browserUrl').value;
+  navigateTo(url);
+}
+
+function navigateTo(url) {
+  if (!url.startsWith('http')) url = 'https://' + url;
+  document.getElementById('browserUrl').value = url;
+  document.getElementById('browserHome').style.display = 'none';
+  document.getElementById('browserFrame').style.display = '';
+  document.getElementById('browserFrame').src = url;
+  // Update tab
+  const activeTab = document.querySelector('#browserTabs .browser-tab.active');
+  if (activeTab) {
+    const hostname = new URL(url).hostname;
+    activeTab.innerHTML = '🌐 ' + hostname + '<span class="tab-close" onclick="event.stopPropagation();closeBrowserTab(this)">✕</span>';
+  }
+}
+
+function refreshBrowser() {
+  const frame = document.getElementById('browserFrame');
+  if (frame.style.display !== 'none') {
+    frame.src = frame.src;
+  }
+}
+
+// =============================================
+// APP STORE
+// =============================================
+const storeApps = [
+  { id: 'calc', name: 'Calculator', icon: '🧮', iconBg: 'linear-gradient(135deg,#6c5ce7,#a29bfe)', desc: '功能强大的科学计算器，支持基本运算和科学函数', dev: 'Basic Team', rating: '★★★★☆', category: 'tools', price: '免费', installed: true },
+  { id: 'guess', name: 'Guess Game', icon: '🎯', iconBg: 'linear-gradient(135deg,#e17055,#d63031)', desc: '经典的猜数字游戏，测试你的运气和推理能力', dev: 'Basic Team', rating: '★★★★★', category: 'games', price: '免费', installed: true },
+  { id: 'monitor', name: 'System Monitor', icon: '📊', iconBg: 'linear-gradient(135deg,#00cec9,#0984e3)', desc: '实时监控系统资源使用情况，CPU、内存、网络一应俱全', dev: 'Basic Team', rating: '★★★★☆', category: 'tools', price: '免费', installed: false },
+  { id: 'ascii', name: 'ASCII Art', icon: '🎨', iconBg: 'linear-gradient(135deg,#fdcb6e,#e17055)', desc: 'ASCII 艺术画廊，将图片转换为字符画，支持多种风格', dev: 'Basic Team', rating: '★★★☆☆', category: 'media', price: '免费', installed: false },
+  { id: 'editor', name: 'Text Editor', icon: '📝', iconBg: 'linear-gradient(135deg,#636e72,#2d3436)', desc: '轻量级文本编辑器，支持语法高亮和多标签页', dev: 'Community', rating: '★★★★☆', category: 'dev', price: '免费', installed: false },
+  { id: 'snake', name: 'Snake Game', icon: '🐍', iconBg: 'linear-gradient(135deg,#3fb950,#2ea043)', desc: '经典贪吃蛇游戏，重温童年回忆', dev: 'Community', rating: '★★★★★', category: 'games', price: '免费', installed: false },
+  { id: 'paint', name: 'Pixel Paint', icon: '🖌️', iconBg: 'linear-gradient(135deg,#a371f7,#6c5ce7)', desc: '像素画编辑器，发挥你的创意', dev: 'Community', rating: '★★★☆☆', category: 'media', price: '免费', installed: false },
+  { id: 'notes', name: 'Notes', icon: '📋', iconBg: 'linear-gradient(135deg,#d29922,#e17055)', desc: '简洁的笔记应用，支持 Markdown 格式', dev: 'Community', rating: '★★★★☆', category: 'tools', price: '免费', installed: false },
+];
+
+function renderStoreApps(filter = '') {
+  const grid = document.getElementById('storeGrid');
+  const q = filter.toLowerCase();
+  grid.innerHTML = storeApps
+    .filter(a => a.name.toLowerCase().includes(q) || a.desc.toLowerCase().includes(q))
+    .map(a => `
+      <div class="store-app-card" onclick="showAppDetail('${a.id}')">
+        <div class="app-icon" style="background:${a.iconBg}">${a.icon}</div>
+        <div class="app-name">${a.name}</div>
+        <div class="app-desc">${a.desc}</div>
+        <div class="app-meta">
+          <span class="app-rating">${a.rating}</span>
+          ${a.installed ? '<span class="app-installed">✓ 已安装</span>' : '<span class="app-price">' + a.price + '</span>'}
+        </div>
+      </div>
+    `).join('');
+}
+
+function filterStoreApps() {
+  renderStoreApps(document.getElementById('storeSearch').value);
+}
+
+function showAppDetail(appId) {
+  const app = storeApps.find(a => a.id === appId);
+  if (!app) return;
+  document.getElementById('storeBrowse').style.display = 'none';
+  document.getElementById('storeDetail').classList.add('show');
+  document.getElementById('storeDetailHero').innerHTML = `
+    <div class="app-icon-lg" style="background:${app.iconBg}">${app.icon}</div>
+    <div class="store-detail-info">
+      <h3>${app.name}</h3>
+      <div class="dev">${app.dev} · ${app.rating} · ${app.price}</div>
+      <div class="desc">${app.desc}</div>
+    </div>
+  `;
+  document.getElementById('storeDetailActions').innerHTML = app.installed
+    ? '<button class="store-install-btn installed">✓ 已安装</button><button class="upgrade-btn secondary" onclick="showToast(\'应用已卸载\',\'info\')">卸载</button>'
+    : '<button class="store-install-btn" onclick="installApp(\'' + app.id + '\')">安装</button>';
+}
+
+function showStoreBrowse() {
+  document.getElementById('storeBrowse').style.display = '';
+  document.getElementById('storeDetail').classList.remove('show');
+}
+
+function installApp(appId) {
+  const app = storeApps.find(a => a.id === appId);
+  if (!app) return;
+  showToast('正在安装 ' + app.name + '...', 'info');
+  setTimeout(() => {
+    app.installed = true;
+    renderStoreApps(document.getElementById('storeSearch').value);
+    showAppDetail(appId);
+    showToast(app.name + ' 安装成功！', 'success');
+  }, 1500);
+}
+
+function switchStoreTab(el, tab) {
+  document.querySelectorAll('.store-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('storeBrowse').style.display = 'none';
+  document.getElementById('storeDetail').classList.remove('show');
+  document.getElementById('storeSubmit').classList.remove('show');
+  document.getElementById('storeSubmitSuccess').classList.remove('show');
+  if (tab === 'browse') {
+    document.getElementById('storeBrowse').style.display = '';
+  } else if (tab === 'installed') {
+    document.getElementById('storeBrowse').style.display = '';
+    document.getElementById('storeSearch').value = '';
+    renderStoreApps('');
+    // Filter only installed
+    const grid = document.getElementById('storeGrid');
+    grid.innerHTML = storeApps
+      .filter(a => a.installed)
+      .map(a => `
+        <div class="store-app-card" onclick="showAppDetail('${a.id}')">
+          <div class="app-icon" style="background:${a.iconBg}">${a.icon}</div>
+          <div class="app-name">${a.name}</div>
+          <div class="app-desc">${a.desc}</div>
+          <div class="app-meta">
+            <span class="app-rating">${a.rating}</span>
+            <span class="app-installed">✓ 已安装</span>
+          </div>
+        </div>
+      `).join('');
+  } else if (tab === 'submit') {
+    document.getElementById('storeSubmit').classList.add('show');
+  }
+}
+
+// =============================================
+// APP SUBMISSION
+// =============================================
+function submitApp() {
+  const name = document.getElementById('appName').value.trim();
+  const dev = document.getElementById('appDev').value.trim();
+  const category = document.getElementById('appCategory').value;
+  const desc = document.getElementById('appDesc').value.trim();
+  const email = document.getElementById('appEmail').value.trim();
+
+  if (!name || !dev || !category || !desc || !email) {
+    showToast('请填写所有必填字段', 'warning');
+    return;
+  }
+
+  // Simulate submission
+  const btn = document.querySelector('.form-submit-btn');
+  btn.disabled = true;
+  btn.textContent = '提交中...';
+
+  setTimeout(() => {
+    document.getElementById('storeSubmit').classList.remove('show');
+    document.getElementById('storeSubmitSuccess').classList.add('show');
+    btn.disabled = false;
+    btn.textContent = '提交申请';
+    showToast('应用 "' + name + '" 已提交审核！', 'success');
+  }, 1500);
+}
+
+function resetSubmitForm() {
+  document.getElementById('storeSubmitSuccess').classList.remove('show');
+  document.getElementById('storeSubmit').classList.add('show');
+  document.getElementById('appName').value = '';
+  document.getElementById('appDev').value = '';
+  document.getElementById('appCategory').value = '';
+  document.getElementById('appDesc').value = '';
+  document.getElementById('appRepo').value = '';
+  document.getElementById('appEmail').value = '';
+  document.getElementById('appIcon').value = '';
+}
+
+// =============================================
+// TERMINAL
+// =============================================
+function handleTerminalInput(e) {
+  if (e.key !== 'Enter') return;
+  const input = document.getElementById('terminalInput');
+  const cmd = input.value.trim().toLowerCase();
+  const body = document.getElementById('terminalBody');
+  input.value = '';
+
+  // Append the command
+  const cmdLine = document.createElement('span');
+  cmdLine.innerHTML = '<br><span class="prompt">kernel&gt;</span> <span class="cmd">' + cmd + '</span><br>';
+  body.appendChild(cmdLine);
+
+  const out = document.createElement('span');
+  out.className = 'output';
+
+  if (cmd === 'help') {
+    out.innerHTML = '可用命令: help, clear, echo, time, mem, version, apps, install, run, uninstall, desktop, settings, store, upgrade, browser, about, shutdown<br>';
+  } else if (cmd === 'clear') {
+    body.innerHTML = '<span class="prompt">kernel&gt;</span> <span class="cmd"><input type="text" id="terminalInput" style="background:none;border:none;color:var(--ink);font-family:GeistMono,monospace;font-size:0.78rem;outline:none;width:200px" onkeydown="handleTerminalInput(event)"></span>';
+    document.getElementById('terminalInput').focus();
+    return;
+  } else if (cmd === 'time') {
+    out.innerHTML = '系统时间: ' + new Date().toLocaleString('zh-CN') + '<br>';
+  } else if (cmd === 'version') {
+    out.innerHTML = 'Basic OS v2.0 — kernel-2.0.0-x86_64<br>';
+  } else if (cmd === 'mem') {
+    out.innerHTML = '内存使用: 45 MB / 256 MB (17.6%)<br>堆空间: 4 MB, 空闲: 3.2 MB<br>';
+  } else if (cmd === 'apps') {
+    out.innerHTML = '  calculator     🧮 科学计算器          [已安装]<br>  guess          🎯 猜数字游戏          [已安装]<br>  monitor        📊 系统监控面板        [未安装]<br>  ascii          🎨 ASCII 艺术画廊      [未安装]<br>  editor         📝 文本编辑器          [未安装]<br>  snake          🐍 贪吃蛇游戏          [未安装]<br>';
+  } else if (cmd === 'desktop') {
+    out.innerHTML = '桌面环境已激活 ✓<br>';
+  } else if (cmd === 'settings') {
+    openWindow('settings');
+    out.innerHTML = '正在打开系统设置...<br>';
+  } else if (cmd === 'store') {
+    openWindow('store');
+    out.innerHTML = '正在打开应用商店...<br>';
+  } else if (cmd === 'upgrade') {
+    openWindow('upgrade');
+    out.innerHTML = '正在打开系统升级...<br>';
+  } else if (cmd === 'browser') {
+    openWindow('browser');
+    out.innerHTML = '正在打开浏览器...<br>';
+  } else if (cmd === 'about') {
+    out.innerHTML = 'HU basic OS v2.0<br>一个用于学习的 x86 操作系统内核<br>64/32/64+32 位 · 图形化桌面环境<br>MIT License · HuHuBasic<br>';
+  } else if (cmd === 'shutdown') {
+    out.innerHTML = '系统正在关闭...<br>';
+    setTimeout(() => showShutdown(), 500);
+  } else if (cmd.startsWith('echo ')) {
+    out.innerHTML = cmd.substring(5) + '<br>';
+  } else if (cmd.startsWith('install ')) {
+    const appName = cmd.substring(8);
+    out.innerHTML = '正在安装 ' + appName + '...<br><span class="highlight">✓ 应用 \'' + appName + '\' 安装成功!</span><br>';
+  } else if (cmd === '') {
+    out.innerHTML = '';
+  } else {
+    out.innerHTML = '未知命令: ' + cmd + ' — 输入 help 查看可用命令<br>';
+  }
+
+  body.appendChild(out);
+  body.appendChild(document.createElement('br'));
+
+  // Recreate input
+  const newInput = document.createElement('span');
+  newInput.innerHTML = '<span class="prompt">kernel&gt;</span> <span class="cmd"><input type="text" id="terminalInput" style="background:none;border:none;color:var(--ink);font-family:GeistMono,monospace;font-size:0.78rem;outline:none;width:200px" onkeydown="handleTerminalInput(event)"></span>';
+  body.appendChild(newInput);
+  document.getElementById('terminalInput').focus();
+  body.scrollTop = body.scrollHeight;
+}
+
+// =============================================
+// SHUTDOWN
+// =============================================
+function showShutdown() {
+  document.querySelectorAll('.window.open').forEach(w => w.classList.remove('open'));
+  document.getElementById('startMenu').classList.remove('show');
+  document.getElementById('bootScreen').style.display = 'flex';
+  document.getElementById('bootScreen').classList.remove('hidden');
+  document.querySelector('.boot-subtitle').textContent = 'Basic OS — 正在关机...';
+  document.querySelector('.boot-loading .bar').style.animation = 'none';
+  document.querySelector('.boot-loading .bar').offsetHeight;
+  document.querySelector('.boot-loading .bar').style.animation = 'bootLoad 1.5s ease-in-out forwards';
+  setTimeout(() => {
+    document.body.style.background = '#000';
+    document.getElementById('bootScreen').innerHTML = '<div style="color:var(--muted);font-size:1rem;font-family:GeistMono,monospace">系统已关闭</div><div style="color:var(--muted);font-size:0.7rem;margin-top:8px;font-family:GeistMono,monospace">点击任意位置重新启动</div>';
+    document.getElementById('bootScreen').onclick = () => location.reload();
+  }, 2000);
+}
+
+// =============================================
+// WALLPAPER
+// =============================================
+function changeWallpaper(type) {
+  const desktop = document.getElementById('desktop');
+  if (type === 'dark') {
+    desktop.style.background = 'linear-gradient(180deg, #0a0a0a 0%, #111 30%, #0a0a0a 100%)';
+  } else if (type === 'cosmic') {
+    desktop.style.background = 'linear-gradient(180deg, #0a0020 0%, #150030 30%, #0a1040 60%, #050020 100%)';
+  } else {
+    desktop.style.background = 'linear-gradient(180deg, #0a1628 0%, #0d1a2d 30%, #0f1f35 60%, #0a1628 100%)';
+  }
+  showToast('桌面背景已更新', 'success');
+}
+
+// =============================================
+// KEYBOARD SHORTCUTS
+// =============================================
+document.addEventListener('keydown', (e) => {
+  if (e.ctrlKey && e.key === 'b') {
+    e.preventDefault();
+    openWindow('browser');
+  } else if (e.ctrlKey && e.key === 's') {
+    e.preventDefault();
+    openWindow('settings');
+  } else if (e.ctrlKey && e.key === 't') {
+    e.preventDefault();
+    openWindow('terminal');
+  }
+});
+
+// =============================================
+// INIT
+// =============================================
+renderStoreApps();
+openWindow('browser');
+
+// Show update notification after 10 seconds
+setTimeout(() => {
+  document.getElementById('trayUpdate').style.display = 'flex';
+}, 10000);
+</script>
 
 </body>
 </html>
