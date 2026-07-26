@@ -2194,7 +2194,7 @@ footer{background:var(--bg2);padding:48px 0;border-top:1px solid var(--rule);tex
     <p class="section-sub">快速访问 Basic 生态的各个入口。</p>
     <div class="link-grid">
       <a href="/chat" class="link-card"><span class="icon">💬</span><h4>Basic Chatting</h4><span>开始聊天</span></a>
-      <a href="https://huhubasic.github.io/basic-kernel" target="_blank" class="link-card"><span class="icon">🖥️</span><h4>HU basic OS</h4><span>在线体验</span></a>
+      <a href="https://huhubasic.github.io/Basic-OS" target="_blank" class="link-card"><span class="icon">🖥️</span><h4>HU basic OS</h4><span>在线体验</span></a>
       <a href="https://github.com/HuHuBasic/basic-chatting" target="_blank" class="link-card"><span class="icon">📦</span><h4>Chatting 源码</h4><span>GitHub</span></a>
       <a href="https://github.com/HuHuBasic" target="_blank" class="link-card"><span class="icon">🐙</span><h4>HuHuBasic</h4><span>GitHub 主页</span></a>
     </div>
@@ -2218,7 +2218,7 @@ footer{background:var(--bg2);padding:48px 0;border-top:1px solid var(--rule);tex
     <div class="footer-slogan">简单即强大 · 开源免费 · 只为更好</div>
     <div class="footer-links">
       <a href="/chat">💬 聊天</a>
-      <a href="https://huhubasic.github.io/basic-kernel" target="_blank">🖥️ Basic OS</a>
+      <a href="https://huhubasic.github.io/Basic-OS" target="_blank">🖥️ Basic OS</a>
       <a href="https://github.com/HuHuBasic/basic-chatting" target="_blank">📦 源码</a>
       <a href="https://github.com/HuHuBasic" target="_blank">🐙 GitHub</a>
     </div>
