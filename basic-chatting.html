@@ -556,12 +556,15 @@ function init() {
   bindEnter('oldPass', changePassword);
   bindEnter('newPass', changePassword);
   bindEnter('deletePassConfirm', deleteAccount);
-  document.getElementById('msgInput').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
-  });
-  document.getElementById('msgInput').addEventListener('input', function() {
-    this.style.height = 'auto'; this.style.height = Math.min(this.scrollHeight, 120) + 'px';
-  });
+  const msgInput = document.getElementById('msgInput');
+  if (msgInput) {
+    msgInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+    });
+    msgInput.addEventListener('input', function() {
+      this.style.height = 'auto'; this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+    });
+  }
 }
 
 function bindEnter(id, fn) {
@@ -571,14 +574,18 @@ function bindEnter(id, fn) {
 
 // ===== Auth =====
 function switchToRegister() {
-  document.getElementById('loginFields').style.display = 'none';
-  document.getElementById('regFields').style.display = 'block';
+  const loginFields = document.getElementById('loginFields');
+  const regFields = document.getElementById('regFields');
+  if (loginFields) loginFields.style.display = 'none';
+  if (regFields) regFields.style.display = 'block';
   document.getElementById('loginError').textContent = '';
   document.getElementById('regError').textContent = '';
 }
 function switchToLogin() {
-  document.getElementById('regFields').style.display = 'none';
-  document.getElementById('loginFields').style.display = 'block';
+  const regFields = document.getElementById('regFields');
+  const loginFields = document.getElementById('loginFields');
+  if (regFields) regFields.style.display = 'none';
+  if (loginFields) loginFields.style.display = 'block';
   document.getElementById('loginError').textContent = '';
   document.getElementById('regError').textContent = '';
 }
@@ -1082,9 +1089,10 @@ function previewPostImage(input) {
   reader.readAsDataURL(file);
 }
 function postMoment() {
-  const text = document.getElementById('postText').value.trim();
+  const textEl = document.getElementById('postText');
+  const text = textEl ? textEl.value.trim() : '';
   const imgPreview = document.getElementById('postImgPreview');
-  const imgData = imgPreview.style.display !== 'none' ? imgPreview.src : null;
+  const imgData = (imgPreview && imgPreview.style.display !== 'none') ? imgPreview.src : null;
   if (!text && !imgData) { showToast('请输入内容或添加图片'); return; }
   if (text.length > 500) { showToast('内容不能超过500字'); return; }
   send({ type: 'moment_post', text, image: imgData });

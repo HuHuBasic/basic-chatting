@@ -1,0 +1,22 @@
+app = "basic-chatting"
+primary_region = "nrt"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[[mounts]]
+  source = "basic-chatting-data"
+  destination = "/data"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    interval = "30s"
+    timeout = "5s"
+    method = "GET"
+    path = "/"
